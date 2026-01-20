@@ -1,12 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>사주 리포트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <title>2026 프리미엄 신토정비결 - 오마이사주</title>
+
+    <!-- (선택) 개발 단계에서만 CDN Tailwind 사용 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font preload helpers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: 'Pretendard', sans-serif;
+        background-color: #02040a;
+        color: #e2e8f0;
+        overflow-x: hidden;
+        word-break: keep-all;
+        margin: 0;
+      }
+      .font-black-title {
+        font-weight: 900;
+        letter-spacing: -0.05em;
+      }
+      .luxury-dark {
+        background:
+          radial-gradient(circle at 50% 30%, rgba(100, 50, 255, 0.15) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(255, 100, 50, 0.1) 0%, transparent 40%),
+          linear-gradient(to bottom, #050a14, #0d1117, #050a14);
+        position: relative;
+      }
+      .luxury-dark::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .gold-shimmer {
+        background: linear-gradient(90deg, #ffd966, #ffffff, #ffd966);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shine 3s linear infinite;
+      }
+      @keyframes shine {
+        0% {
+          background-position: -200% center;
+        }
+        100% {
+          background-position: 200% center;
+        }
+      }
+      #root {
+        min-height: 100vh;
+      }
+    </style>
   </head>
+
   <body>
     <div id="root"></div>
+
+    <!-- Vite 엔트리 -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
