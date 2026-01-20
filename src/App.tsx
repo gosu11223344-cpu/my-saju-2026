@@ -26,8 +26,13 @@ function calcInitialReviewCount(nowMs: number) {
   return baseReviews + dailyGrowth;
 }
 
+// ✅ 1단계: App 화면 단계 타입
+type AppStep = "form" | "result";
+
 const App: React.FC = () => {
-  const [isFinished, setIsFinished] = useState(false);
+  // ✅ 1단계: isFinished 대신 step
+  const [step, setStep] = useState<AppStep>("form");
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
@@ -48,7 +53,8 @@ const App: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const scheduleNextTick = useCallback(() => {
-    if (isFinished) return;
+    // ✅ result 화면이면 카운트 업데이트 중단
+    if (step === "result") return;
 
     const hour = new Date().getHours();
     let minMs: number;
@@ -59,7 +65,7 @@ const App: React.FC = () => {
       minMs = 60 * 60 * 1000;
       maxMs = 120 * 60 * 1000;
     }
-    // 저녁(19~23): 빠르게  ✅ (기존 코드 버그 수정: || → &&)
+    // 저녁(19~23): 빠르게
     else if (hour >= 19 && hour <= 23) {
       minMs = 10 * 60 * 1000;
       maxMs = 40 * 60 * 1000;
@@ -80,7 +86,7 @@ const App: React.FC = () => {
       setTimeout(() => setIsUpdating(false), 2000);
       scheduleNextTick();
     }, randomDelay);
-  }, [isFinished]);
+  }, [step]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -128,21 +134,22 @@ const App: React.FC = () => {
     setTimeout(() => setIsUpdating(false), 2000);
   }, []);
 
+  // ✅ 완료되면 result 화면으로
   const handleComplete = () => {
     setError(null);
-    setIsFinished(true);
+    setStep("result");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ✅ 다시 form 화면으로
   const handleReset = () => {
-    setIsFinished(false);
     setError(null);
+    setStep("form");
   };
 
   const handleAdminLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    // ⚠️ 보안상 실제 배포에서는 하드코딩 비번 대신 서버/환경변수 권장
     if (adminPassword === "kona2018**") {
       setIsAdmin(true);
       setShowLoginModal(false);
@@ -213,7 +220,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {!isFinished ? (
+      {step === "form" ? (
         <>
           <Promotion />
           <TrustBanner />

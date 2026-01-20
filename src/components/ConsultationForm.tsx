@@ -287,7 +287,10 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
   const finalDepositorName = companions[0]?.isDepositorDifferent ? companions[0]?.depositorName : companions[0]?.name;
 
   return (
-    <div className="w-full bg-[#FFFBF2] py-6 sm:py-16 px-3 sm:px-6 md:px-12 pb-24 relative" id="self-input-section">
+<div
+  id="self-input-section"
+  className="w-full bg-[#FFFBF2] py-6 sm:py-16 px-3 sm:px-6 md:px-12 pb-24 relative scroll-mt-[120px] sm:scroll-mt-[140px]"
+>
       {showSms.show && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] w-[90%] max-w-sm animate-in slide-in-from-top-full duration-500">
           <div className="bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[20px] p-4 shadow-[0_15px_40px_rgba(0,0,0,0.12)] flex items-start gap-3">
