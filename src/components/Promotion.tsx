@@ -74,9 +74,9 @@ const Promotion: React.FC = () => {
       {/* 1. 긴급 공지 바 */}
       <div className="w-full bg-[#C02128] py-4 sm:py-6 px-4 text-center text-white shadow-lg z-30 border-b border-white/5 flex items-center justify-center gap-4 overflow-hidden">
         <div className="flex items-center gap-3 animate-pulse">
-          <span className="text-[24px] sm:text-[32px] md:text-[40px]">📢</span>
+          <span className="text-[24px] sm:text-[32px] md:text-[40px]">🔮</span>
           <span className="text-[21px] sm:text-[27px] md:text-[33px] font-black tracking-widest leading-none">
-            선착순 특가 이벤트 마감 임박
+            2026년 사주·운세·궁합 특가 마감 임박
           </span>
         </div>
       </div>
@@ -91,9 +91,91 @@ const Promotion: React.FC = () => {
 
         <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
           <div className="mb-4 sm:mb-6 flex flex-col items-center">
-            <span className="inline-block px-8 py-3 rounded-full bg-white/5 border border-[#FFD966]/30 text-[20px] sm:text-[26px] font-black tracking-[0.4em] text-[#FFD966] mb-4 sm:mb-6 backdrop-blur-md shadow-[0_0_30px_rgba(255,217,102,0.15)]">
-              2026 프리미엄 신년운세
-            </span>
+<span
+  className="
+    relative inline-flex items-center justify-center
+    px-8 sm:px-12 md:px-16
+    py-4 sm:py-6 md:py-7
+    rounded-full
+    border border-[#FFD966]/45
+    bg-gradient-to-br from-[#2b2200] via-[#1a1500] to-[#090700]
+    shadow-[0_22px_70px_rgba(0,0,0,0.75)]
+    backdrop-blur-xl
+    overflow-hidden
+    mb-6 sm:mb-10
+  "
+>
+  {/* 골드 후광 */}
+  <span className="absolute -top-1/2 -left-1/2 w-full h-full bg-[#FFD966]/18 blur-[140px] rounded-full pointer-events-none" />
+
+  {/* Shimmer */}
+  <span className="absolute inset-0 pointer-events-none">
+    <span className="badge-shimmer absolute -left-[80%] top-0 h-full w-[70%] bg-gradient-to-r from-transparent via-white/30 to-transparent blur-lg opacity-80" />
+  </span>
+
+  {/* 텍스트 */}
+  <span
+    className="
+      relative z-10 font-black tracking-[0.22em] sm:tracking-[0.28em]
+      leading-none text-center
+      text-[28px] xs:text-[32px] sm:text-[46px] md:text-[60px] lg:text-[72px]
+      badge-gold-text badge-glow
+    "
+  >
+    2026 프리미엄 신년운세
+  </span>
+
+  {/* 하단 골드 라인 */}
+  <span className="absolute left-1/2 -translate-x-1/2 bottom-1.5 sm:bottom-2 h-[3px] sm:h-[5px] w-[72%] bg-gradient-to-r from-transparent via-[#FFD966] to-transparent opacity-80" />
+
+  <style>{`
+    .badge-gold-text{
+      background: linear-gradient(
+        90deg,
+        #fff7cc 0%,
+        #ffd966 25%,
+        #fff3b0 50%,
+        #ffd966 75%,
+        #fff7cc 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    @keyframes badgeShimmer {
+      0% { transform: translateX(0); opacity: 0; }
+      15% { opacity: 0.9; }
+      50% { opacity: 1; }
+      85% { opacity: 0.9; }
+      100% { transform: translateX(260%); opacity: 0; }
+    }
+    .badge-shimmer{
+      animation: badgeShimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes badgeGlowPulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 14px rgba(255,217,102,0.35));
+        transform: translateY(0);
+      }
+      50% {
+        filter: drop-shadow(0 0 32px rgba(255,217,102,0.65));
+        transform: translateY(-2px);
+      }
+    }
+    .badge-glow{
+      animation: badgeGlowPulse 2.2s ease-in-out infinite;
+    }
+
+    @media (max-width: 640px) {
+      .badge-shimmer { animation-duration: 2.2s; }
+      .badge-glow { animation-duration: 1.8s; }
+    }
+  `}</style>
+</span>
+
+
             <div className="w-px h-10 sm:h-14 bg-gradient-to-b from-white/0 via-[#FFD966]/40 to-white/0 mb-4 sm:mb-6" />
           </div>
 
