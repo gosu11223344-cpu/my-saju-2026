@@ -95,22 +95,92 @@ const CONTENT_PARTS = {
   ],
 };
 
+// ==============================
+// ✅ 전역(모든 유저 동일) "하루 6~12개"가
+// ✅ 하루 동안 2~4시간 간격 느낌으로 "시간에 따라" 올라가게 만드는 로직
+// ==============================
+const BASE_DATE_MS = new Date("2026-01-19T00:00:00+09:00").getTime();
+
+// dayIndex(0,1,2...)별 6~12개
+function dailyAdd(dayIndex: number) {
+  const x = (dayIndex * 9301 + 49297) % 233280;
+  return 6 + (x % 7); // 6~12
+}
+
+// 간단한 결정론 RNG (0~1)
+function rand01(seed: number) {
+  const x = (seed * 9301 + 49297) % 233280;
+  return x / 233280;
+}
+
+// 하루 안에서 "전역으로 +1이 일어나는 시각들(ms)" 생성
+function buildTodayScheduleMs(dayIndex: number) {
+  const n = dailyAdd(dayIndex);
+
+  const times: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const seed = dayIndex * 1000 + i * 17 + 9;
+    const t = Math.floor(rand01(seed) * 24 * 60 * 60 * 1000); // 0~24h
+    times.push(t);
+  }
+  times.sort((a, b) => a - b);
+
+  // 너무 붙어있는 경우: 최소 2시간 느낌 유지
+  const MIN_GAP = 2 * 60 * 60 * 1000;
+  for (let i = 1; i < times.length; i++) {
+    if (times[i] - times[i - 1] < MIN_GAP) {
+      times[i] = Math.min(times[i - 1] + MIN_GAP, 24 * 60 * 60 * 1000 - 1);
+    }
+  }
+  return times;
+}
+
+// 지금 시각 기준으로 "전역으로 몇 개 올라갔는지" 계산
+function calcGlobalReviewAdd(nowMs: number) {
+  const days = Math.max(
+    0,
+    Math.floor((nowMs - BASE_DATE_MS) / (24 * 60 * 60 * 1000))
+  );
+  const dayStart = BASE_DATE_MS + days * 24 * 60 * 60 * 1000;
+  const msIntoDay = Math.max(0, nowMs - dayStart);
+
+  // 과거 전체 날짜는 "하루 6~12" 합산
+  let total = 0;
+  for (let d = 0; d < days; d++) total += dailyAdd(d);
+
+  // 오늘은 "스케줄 중 지금까지 지난 것"만 카운트
+  const todaySchedule = buildTodayScheduleMs(days);
+  const todayCount = todaySchedule.filter((t) => t <= msIntoDay).length;
+
+  return total + todayCount;
+}
+
 const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const totalPages = Math.max(1, Math.ceil(reviewCount / itemsPerPage));
+  // ✅ 전역 증가가 시간에 따라 반영되도록, 일정 주기로 nowTick 업데이트
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 30_000); // 30초마다 체크
+    return () => clearInterval(id);
+  }, []);
 
-  // reviewCount가 줄어들면 currentPage가 totalPages를 넘을 수 있으니 보정
+  // ✅ "전역(모든 유저 동일)" 증가 + "App에서 내려준 reviewCount(로컬 증가 포함)" 합산
+const dynamicCount = reviewCount;
+
+
+  const totalPages = Math.max(1, Math.ceil(dynamicCount / itemsPerPage));
+
   useEffect(() => {
     setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
 
   const REVIEWS = useMemo(() => {
     const allReviews: Review[] = [];
-    const baseDate = new Date("2026-01-19").getTime(); // 기준 날짜 고정
+    const baseDate = new Date().setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < reviewCount; i++) {
+    for (let i = 0; i < dynamicCount; i++) {
       const firstName = FIRST_NAMES[i % FIRST_NAMES.length];
       const lastName = LAST_NAMES[(i * 7) % LAST_NAMES.length];
       const name = firstName + lastName;
@@ -145,9 +215,8 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
       });
     }
 
-    // 최신순 정렬 (결정론적)
     return allReviews.sort((a, b) => b.timestamp - a.timestamp);
-  }, [reviewCount]);
+  }, [dynamicCount]);
 
   const currentReviews = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -155,8 +224,8 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
   }, [REVIEWS, currentPage]);
 
   const pageNumbers = useMemo(() => {
-    // SSR 안전 처리
-    const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
+    const isMobile =
+      typeof window !== "undefined" ? window.innerWidth < 640 : false;
     const delta = isMobile ? 2 : 4;
 
     const pages: (number | string)[] = [];
@@ -197,7 +266,7 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
         </div>
         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
           <span className="text-base sm:text-xl text-[#C02128] font-black tabular-nums">
-            누적 {reviewCount.toLocaleString()}건+
+            누적 {dynamicCount.toLocaleString()}건+
           </span>
           <div className="flex gap-0.5 mt-1">
             {[1, 2, 3, 4, 5].map((s) => (
@@ -211,7 +280,10 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
 
       <div className="divide-y divide-gray-50">
         {currentReviews.map((review) => (
-          <div key={review.id} className="p-5 sm:p-7 hover:bg-slate-50/30 transition-colors">
+          <div
+            key={review.id}
+            className="p-5 sm:p-7 hover:bg-slate-50/30 transition-colors"
+          >
             <div className="flex items-center gap-3 sm:gap-5 mb-3 sm:mb-4">
               <div
                 className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full ${review.color} flex items-center justify-center font-black text-white text-sm sm:text-lg shadow-sm`}
@@ -226,7 +298,10 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <span key={s} className="text-amber-400 text-[10px] sm:text-[12px]">
+                      <span
+                        key={s}
+                        className="text-amber-400 text-[10px] sm:text-[12px]"
+                      >
                         ★
                       </span>
                     ))}
@@ -265,7 +340,10 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
           <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center">
             {pageNumbers.map((p, i) =>
               p === "..." ? (
-                <span key={`dots-${i}`} className="text-slate-300 font-bold px-0.5 sm:px-1">
+                <span
+                  key={`dots-${i}`}
+                  className="text-slate-300 font-bold px-0.5 sm:px-1"
+                >
                   ...
                 </span>
               ) : (
@@ -298,8 +376,8 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
         </div>
 
         <p className="text-[10px] sm:text-[12px] font-bold text-slate-300 uppercase tracking-widest text-center">
-          PAGE <span className="text-slate-400">{currentPage}</span> / {totalPages} (
-          {reviewCount.toLocaleString()}건 REVIEWS)
+          PAGE <span className="text-slate-400">{currentPage}</span> /{" "}
+          {totalPages} ({dynamicCount.toLocaleString()}건 REVIEWS)
         </p>
       </div>
     </div>

@@ -16,9 +16,57 @@ interface Application {
 }
 
 interface LiveStatusProps {
+  /** ✅ 누적 참여(명) - "참여" 전용 */
   cumulativeCount: number;
+
+  /** ✅ 실시간 누적(건+) - "후기/리뷰" 전용 (LiveStatus에서는 숫자만 필요할 수 있음) */
+  reviewCount: number;
+
   onUpdate?: () => void;
 }
+
+/** =========================
+ * (옵션) 전역 브로드캐스트
+ * - 혹시 다른 컴포넌트가 동일 숫자를 구독해야 할 때만 사용
+ * ========================= */
+declare global {
+  interface Window {
+    __SAJU_PARTICIPANT_COUNT__?: number;
+    __SAJU_REVIEW_COUNT__?: number;
+  }
+}
+
+const broadcastCounts = (participants: number, reviews: number) => {
+  if (typeof window === "undefined") return;
+  window.__SAJU_PARTICIPANT_COUNT__ = participants;
+  window.__SAJU_REVIEW_COUNT__ = reviews;
+
+  window.dispatchEvent(
+    new CustomEvent("saju-participant-update", { detail: { count: participants } })
+  );
+  window.dispatchEvent(
+    new CustomEvent("saju-review-update", { detail: { count: reviews } })
+  );
+};
+
+/** =========================
+ * ✅ 결정론적(날짜 기반) 참여(명) 누적 증가 계산
+ * - "누적 참여"만 이 로직을 탄다
+ * ========================= */
+const BASE_DATE_STR = "2026-01-19T00:00:00+09:00";
+const BASE_DATE_MS = new Date(BASE_DATE_STR).getTime();
+
+const dailyAddDeterministic = (dayIndex: number) => {
+  const x = (dayIndex * 9301 + 49297) % 233280;
+  return 6 + (x % 7); // 6~12
+};
+
+const calcUnifiedParticipantCount = (base: number, nowMs: number) => {
+  const days = Math.max(0, Math.floor((nowMs - BASE_DATE_MS) / (1000 * 60 * 60 * 24)));
+  let add = 0;
+  for (let d = 0; d < days; d++) add += dailyAddDeterministic(d);
+  return base + add;
+};
 
 const FIRST_NAMES = [
   "김",
@@ -43,7 +91,26 @@ const FIRST_NAMES = [
   "홍",
 ];
 
-const LAST_NAMES = ["*훈", "*희", "*영", "*준", "*현", "*민", "*서", "*진", "*우", "*아", "*은", "*재", "*윤", "*호", "*빈", "*성", "*연", "*주"];
+const LAST_NAMES = [
+  "*훈",
+  "*희",
+  "*영",
+  "*준",
+  "*현",
+  "*민",
+  "*서",
+  "*진",
+  "*우",
+  "*아",
+  "*은",
+  "*재",
+  "*윤",
+  "*호",
+  "*빈",
+  "*성",
+  "*연",
+  "*주",
+];
 
 const AVATAR_COLORS = [
   "bg-slate-500",
@@ -83,7 +150,6 @@ const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 const getTimedViewerCount = () => {
   const hour = new Date().getHours();
-  // 18~05: 야간(30~47), 그 외: 주간(10~20)
   if (hour >= 18 || hour < 6) return Math.floor(Math.random() * 18) + 30;
   return Math.floor(Math.random() * 11) + 10;
 };
@@ -108,7 +174,6 @@ const generateRandomApp = (idPrefix: string, baseMinutes = 0): Application => {
 
 const applyVisualStatuses = (list: Application[]): Application[] => {
   return list.map((app, index) => {
-    // 실제 데이터가 "completed"가 아닌 상태로 들어오면 그대로 유지
     if (app.isReal && app.status !== "completed") return app;
 
     let status: AppStatus = "completed";
@@ -157,13 +222,27 @@ const StatusPill = ({ status }: { status: AppStatus }) => {
   }
 };
 
-const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) => {
-  // setTimeout 타입: 브라우저/Node 모두 안전
+const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, reviewCount, onUpdate }) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [viewerCount, setViewerCount] = useState<number>(() => getTimedViewerCount());
   const [apps, setApps] = useState<Application[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  /** ✅ 누적 참여(명) = cumulativeCount 기반 */
+  const unifiedParticipantCount = useMemo(() => {
+    return calcUnifiedParticipantCount(cumulativeCount, Date.now());
+  }, [cumulativeCount]);
+
+  /** ✅ 리뷰(건) 숫자만 유지 (LiveStatus 내부에서는 표시하지 않아도 됨) */
+  const unifiedReviewCount = useMemo(() => {
+    return reviewCount;
+  }, [reviewCount]);
+
+  /** (옵션) 전역 브로드캐스트 */
+  useEffect(() => {
+    broadcastCounts(unifiedParticipantCount, unifiedReviewCount);
+  }, [unifiedParticipantCount, unifiedReviewCount]);
 
   const processRecords = useCallback((records: ApplicationRecord[]) => {
     const now = new Date();
@@ -179,8 +258,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
         if (diffMins < 0) return [];
         if (diffMins >= 600) return [];
 
-        const statusFromRecord: AppStatus =
-          record.status === "completed" ? "completed" : "processing";
+        const statusFromRecord: AppStatus = record.status === "completed" ? "completed" : "processing";
 
         return [
           {
@@ -195,7 +273,6 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
           },
         ];
       })
-      // minutesAgo 작은게 더 최신(방금 전)이라 위로 오게
       .sort((a, b) => a.minutesAgo - b.minutesAgo);
 
     const totalNeeded = 20;
@@ -204,7 +281,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
     let lastMins = combined.length > 0 ? combined[combined.length - 1].minutesAgo : 0;
 
     while (combined.length < totalNeeded) {
-      lastMins += Math.floor(Math.random() * 30) + 15; // 15~44분 간격으로 과거로 추가
+      lastMins += Math.floor(Math.random() * 30) + 15;
       if (lastMins >= 600) break;
       combined.push(generateRandomApp("sim", lastMins));
     }
@@ -214,11 +291,9 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
   }, []);
 
   const loadInitialData = useCallback(async () => {
-    // 로컬 먼저
-    const localRecords = databaseService.getAllApplications();
+    const localRecords = databaseService.getAllApplications?.() ?? [];
     processRecords(localRecords);
 
-    // 원격 동기화(있으면 덮어쓰기)
     try {
       const remoteRecords = await databaseService.syncFromRemote();
       if (remoteRecords && remoteRecords.length > 0) processRecords(remoteRecords);
@@ -247,8 +322,6 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
       };
 
       setApps((prev) => {
-        // 기존 항목은 "시간 경과" 반영: 1분씩 증가(표시가 자연스러움)
-        // (원래 코드의 +0은 의미가 없어서 실제 동작하도록 수정)
         const aged = prev
           .map((a) => {
             const nextMins = clamp(a.minutesAgo + 1, 0, 599);
@@ -281,7 +354,6 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
     return () => window.removeEventListener("new-saju-application", handleNewOrder as EventListener);
   }, [addNewApplication]);
 
-  // 무작위 루프 타이머
   useEffect(() => {
     const scheduleNext = () => {
       const hour = new Date().getHours();
@@ -289,13 +361,12 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
       let min: number;
       let max: number;
 
-      // 시간대별 무작위 딜레이 (평균 36분 = 하루 40명 목표)
       if (hour >= 1 && hour <= 7) {
         min = 60;
-        max = 150; // 새벽엔 아주 가끔
+        max = 150;
       } else {
         min = 10;
-        max = 65; // 평소엔 10~65분 사이 무작위
+        max = 65;
       }
 
       const delay = (min + Math.random() * (max - min)) * 60 * 1000;
@@ -350,7 +421,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
               Cumulative Participants
             </span>
             <div className="text-[14px] sm:text-[20px] text-[#C02128] font-black tracking-tight">
-              누적 참여 {cumulativeCount.toLocaleString()}명
+              누적 참여 {unifiedParticipantCount.toLocaleString()}명
             </div>
           </div>
         </div>
@@ -375,7 +446,9 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, onUpdate }) =>
                   <div className="font-black text-slate-800 text-[12px] sm:text-[17px] tracking-tight">
                     {app.name}
                   </div>
-                  <div className="text-slate-400 text-[9px] sm:text-[11px] font-bold">{app.phone}</div>
+                  <div className="text-slate-400 text-[9px] sm:text-[11px] font-bold">
+                    {app.phone}
+                  </div>
                 </div>
               </div>
 

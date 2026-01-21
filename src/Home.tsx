@@ -20,11 +20,23 @@ function calcDynamicBaseCount(nowMs: number) {
 }
 
 function calcInitialReviewCount(nowMs: number) {
-  const diffDays = Math.floor((nowMs - START_DATE_MS) / (1000 * 60 * 60 * 24));
-  const baseReviews = 1825;
-  const dailyGrowth = diffDays * 5;
-  return baseReviews + dailyGrowth;
+const baseReviews = 3500;
+
+  const BASE_DATE_MS = new Date("2026-01-19T00:00:00+09:00").getTime();
+
+  const days = Math.max(0, Math.floor((nowMs - BASE_DATE_MS) / (1000 * 60 * 60 * 24)));
+
+  const dailyAdd = (dayIndex: number) => {
+    const x = (dayIndex * 9301 + 49297) % 233280; // 결정론적 난수
+    return 6 + (x % 7); // 6~12
+  };
+
+  let add = 0;
+  for (let d = 0; d < days; d++) add += dailyAdd(d);
+
+  return baseReviews + add;
 }
+
 
 // ✅ 1단계: App 화면 단계 타입
 type AppStep = "form" | "result";
@@ -81,7 +93,7 @@ const App: React.FC = () => {
     timerRef.current = setTimeout(() => {
       setIsUpdating(true);
       setAppCount((prev) => prev + 1);
-      if (Math.random() > 0.8) setReviewCount((p) => p + 1);
+      
 
       setTimeout(() => setIsUpdating(false), 2000);
       scheduleNextTick();
@@ -101,7 +113,7 @@ const App: React.FC = () => {
     const handleNewOrder = () => {
       setIsUpdating(true);
       setAppCount((prev) => prev + 1);
-      if (Math.random() > 0.6) setReviewCount((prev) => prev + 1);
+      
       setTimeout(() => setIsUpdating(false), 2000);
     };
 
@@ -230,7 +242,12 @@ const App: React.FC = () => {
           <div className="px-4 pt-2 sm:pt-4 pb-12">
             <ReviewCarousel reviewCount={reviewCount} />
             <ConsultationForm onComplete={handleComplete} isLoading={false} />
-            <LiveStatus cumulativeCount={appCount} onUpdate={handleSimulatedUpdate} />
+            <LiveStatus
+  cumulativeCount={appCount}
+  reviewCount={reviewCount}
+  onUpdate={handleSimulatedUpdate}
+/>
+
           </div>
 
           {showFloatingCta && (
