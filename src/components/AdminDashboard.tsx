@@ -261,44 +261,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
                   <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
                     <div className="flex-1 w-full space-y-3">
-                      {(app.companions || []).map((c: any, i: number) => (
-                        <div key={i} className="flex items-center gap-3 justify-center lg:justify-start">
-                          <div
-                            className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-black text-[11px] shadow-sm ${
-                              i === 0 ? "bg-orange-500" : "bg-slate-300"
-                            }`}
-                          >
-                            {i === 0 ? "M" : i + 1}
-                          </div>
-<div className="flex items-center gap-2">
-  <span className="text-[16px] sm:text-[20px] font-black text-slate-900">{c?.name}</span>
+  {(app.companions || []).map((c: any, i: number) => {
+    const main = (app.companions || [])[0] || {};
+    const payerDifferent = !!(main?.payerDifferent ?? main?.isDepositorDifferent);
+    const payerName = String(main?.payerName ?? main?.depositorName ?? "").trim();
 
-  <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-black">
-    {c?.gender === "male" ? "남" : "여"}
-  </span>
+    return (
+      <div key={i} className="flex items-center gap-3 justify-center lg:justify-start">
+        <div
+          className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-black text-[11px] shadow-sm ${
+            i === 0 ? "bg-orange-500" : "bg-slate-300"
+          }`}
+        >
+          {i === 0 ? "M" : i + 1}
+        </div>
 
-  <span className="text-[13px] text-slate-300 font-bold">
-    {c?.phone2}-{c?.phone3}
-  </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[16px] sm:text-[20px] font-black text-slate-900">{c?.name}</span>
 
-{(() => {
-  const main = (app.companions || [])[0] || {};
-  const payerDifferent = !!(main?.payerDifferent ?? main?.isDepositorDifferent);
-  const payerName = String(main?.payerName ?? main?.depositorName ?? "").trim();
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-black">
+            {c?.gender === "male" ? "남" : "여"}
+          </span>
 
-  // ✅ 0번(M) 라인에서만 보여주기
-  if (i !== 0) return null;
-  if (!payerDifferent) return null;
+          <span className="text-[13px] text-slate-300 font-bold">
+            {c?.phone2}-{c?.phone3}
+          </span>
 
-  return (
-    <span className="text-[10px] sm:text-[11px] bg-red-50 text-[#C02128] px-2 py-0.5 rounded-full font-black border border-red-200">
-      입금자: {payerName || "미입력"} (타인입금)
-    </span>
-  );
-})()}
-
-
+          {/* ✅ 0번(M) 라인에서만 “타인입금” 표시 */}
+          {i === 0 && payerDifferent ? (
+            <span className="text-[10px] sm:text-[11px] bg-red-50 text-[#C02128] px-2 py-0.5 rounded-full font-black border border-red-200">
+              입금자: {payerName || "미입력"} (타인입금)
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
+  })}
 </div>
+
 
 
                     <div className="w-full lg:w-[380px] bg-[#F8FAFC] rounded-[20px] p-4 sm:p-5 border border-slate-100 shadow-inner">
