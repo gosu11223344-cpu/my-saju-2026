@@ -36,6 +36,10 @@ export interface UserInput {
 
   /** 사용자가 직접 적은 문의 내용 */
   inquiry?: string;
+
+  /* ✅ 추가: 입금자명이 다른 경우 */
+  payerDifferent?: boolean;     // 체크박스
+  payerName?: string;           // 실제 입금자 성함
 }
 
 /* =========================
@@ -55,32 +59,4 @@ export interface ApplicationRecord {
 
   /** 결제 식별자 (결제 후에만 존재) */
   paymentId?: string;
-}
-
-/* =========================
-   사주/운세 결과
-========================= */
-
-export interface MonthlyLuck {
-  month: number; // 1 ~ 12
-  description: string;
-}
-
-export interface FortuneResult {
-  summary: string;
-
-  /** 핵심 키워드 (예: 재물운, 전환기 등) */
-  keyword: string;
-
-  /** 0 ~ 100 */
-  score: number;
-
-  wealth: string;
-  career: string;
-  love: string;
-  health: string;
-
-  monthlyLuck: MonthlyLuck[];
-
-  advice: string;
 }

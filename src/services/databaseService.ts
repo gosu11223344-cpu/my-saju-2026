@@ -4,7 +4,8 @@ const DB_KEY = "saju_applications_v1";
 
 // 배포 후 받은 Apps Script URL
 const GOOGLE_SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbzx01Jri8VnIYscZJmxXUKY6CAizEMHhz6NlVHkChQewOJgSD54xSkUuAWxFW2HAVvK/exec";
+  "https://script.google.com/macros/s/AKfycbyzYi1I88L6z-98y981s6Z-ogjzlCI64PwZafgGTi0Rx0ioOjZhZhzWflva2mI8VaNw/exec";
+
 
 // 상태 우선순위 (모르는 상태가 와도 안전하게 처리)
 const STATUS_PRIORITY: Record<string, number> = {
@@ -52,14 +53,32 @@ function rowToRecord(row: any): ApplicationRecord | null {
 
   const createdAt = row?.createdAt ?? row?.접수일시 ?? new Date().toISOString();
   const status = (row?.status ?? row?.상태 ?? "pending") as ApplicationRecord["status"];
-  const companions = extractCompanions(row);
+  const companionsRaw = extractCompanions(row);
+
+// ✅ 원격/로컬 어떤 데이터가 와도 "입금자 필드"가 둘 다 존재하도록 정규화
+const companions = (Array.isArray(companionsRaw) ? companionsRaw : []).map((c: any) => {
+  const payerDifferent = !!(c?.payerDifferent ?? c?.isDepositorDifferent);
+  const payerName = String(c?.payerName ?? c?.depositorName ?? "").trim();
+
+  const isDepositorDifferent = !!(c?.isDepositorDifferent ?? c?.payerDifferent);
+  const depositorName = String(c?.depositorName ?? c?.payerName ?? "").trim();
 
   return {
-    id: String(id),
-    createdAt: String(createdAt),
-    status,
-    companions: companions as any[] // (types.ts에서 companions를 any[]로 뒀다면 유지)
+    ...c,
+    payerDifferent,
+    payerName,
+    isDepositorDifferent,
+    depositorName,
   };
+});
+
+return {
+  id: String(id),
+  createdAt: String(createdAt),
+  status,
+  companions: companions as any[]
+};
+
 }
 
 // 레코드 병합 (ID 기준)
@@ -84,11 +103,32 @@ function mergeRecords(a: ApplicationRecord, b: ApplicationRecord): ApplicationRe
 export const databaseService = {
   // 로컬 데이터 로드
   getAllApplications(): ApplicationRecord[] {
-    const data = localStorage.getItem(DB_KEY);
-    if (!data) return [];
-    const parsed = safeParseJSON<ApplicationRecord[]>(data, []);
-    return Array.isArray(parsed) ? parsed.filter((app) => app && app.id) : [];
-  },
+  const data = localStorage.getItem(DB_KEY);
+  if (!data) return [];
+
+  const parsed = safeParseJSON<ApplicationRecord[]>(data, []);
+  const cleaned = (Array.isArray(parsed) ? parsed : [])
+    .filter((app) => app && app.id)
+    .map((app: any) => {
+      const compsRaw = Array.isArray(app?.companions) ? app.companions : [];
+      const companions = compsRaw.map((c: any) => {
+        const payerDifferent = !!(c?.payerDifferent ?? c?.isDepositorDifferent);
+        const payerName = String(c?.payerName ?? c?.depositorName ?? "").trim();
+
+        const isDepositorDifferent = !!(c?.isDepositorDifferent ?? c?.payerDifferent);
+        const depositorName = String(c?.depositorName ?? c?.payerName ?? "").trim();
+
+        return { ...c, payerDifferent, payerName, isDepositorDifferent, depositorName };
+      });
+
+      return { ...app, companions };
+    });
+
+  // ✅ 기존 로컬 데이터도 영구적으로 정규화(마이그레이션)
+  localStorage.setItem(DB_KEY, JSON.stringify(cleaned));
+  return cleaned;
+},
+
 
   // 원격 데이터 동기화 (로컬+원격 병합)
   async syncFromRemote(): Promise<ApplicationRecord[]> {
@@ -143,14 +183,26 @@ export const databaseService = {
     }
   },
 
-  // 신규 저장
-  async saveApplication(data: unknown[]): Promise<ApplicationRecord> {
-    const newRecord: ApplicationRecord = {
-      id: `APP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-      companions: data as any[]
-    };
+// 신규 저장
+async saveApplication(data: unknown[]): Promise<ApplicationRecord> {
+  const normalizedCompanions = (Array.isArray(data) ? data : []).map((c: any) => ({
+    ...c,
+
+    // ✅ 이름 불일치 해결: 둘 다 저장되게 “동시에” 기록
+    payerDifferent: !!(c?.payerDifferent ?? c?.isDepositorDifferent),
+    payerName: String(c?.payerName ?? c?.depositorName ?? "").trim(),
+
+    isDepositorDifferent: !!(c?.isDepositorDifferent ?? c?.payerDifferent),
+    depositorName: String(c?.depositorName ?? c?.payerName ?? "").trim(),
+  }));
+
+  const newRecord: ApplicationRecord = {
+    id: `APP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    createdAt: new Date().toISOString(),
+    status: "pending",
+    companions: normalizedCompanions as any[]
+  };
+
 
     // 로컬에 먼저 저장
     const existing = databaseService.getAllApplications();
