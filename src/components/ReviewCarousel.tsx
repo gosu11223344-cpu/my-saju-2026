@@ -175,48 +175,52 @@ const dynamicCount = reviewCount;
   useEffect(() => {
     setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
+const REVIEWS = useMemo(() => {
+  const allReviews: Review[] = [];
+  const baseDate = new Date().setHours(0, 0, 0, 0);
 
-  const REVIEWS = useMemo(() => {
-    const allReviews: Review[] = [];
-    const baseDate = new Date().setHours(0, 0, 0, 0);
+  for (let i = 0; i < dynamicCount; i++) {
+    // ✅ 핵심: "최신이 위"로 오도록 뒤집은 인덱스
+    const newestIndex = (dynamicCount - 1) - i;
 
-    for (let i = 0; i < dynamicCount; i++) {
-      const firstName = FIRST_NAMES[i % FIRST_NAMES.length];
-      const lastName = LAST_NAMES[(i * 7) % LAST_NAMES.length];
-      const name = firstName + lastName;
+    const firstName = FIRST_NAMES[newestIndex % FIRST_NAMES.length];
+    const lastName = LAST_NAMES[(newestIndex * 7) % LAST_NAMES.length];
+    const name = firstName + lastName;
 
-      const daysAgo = Math.floor(i / 5);
-      const targetTimestamp = baseDate - daysAgo * 24 * 60 * 60 * 1000;
-      const targetDate = new Date(targetTimestamp);
+    // ✅ 최신 5개는 오늘, 다음 5개는 어제… 이런 식으로 배치
+    const daysAgo = Math.floor(newestIndex / 5);
+    const targetTimestamp = baseDate - daysAgo * 24 * 60 * 60 * 1000;
+    const targetDate = new Date(targetTimestamp);
 
-      const dateStr = `${targetDate.getFullYear()}.${String(
-        targetDate.getMonth() + 1
-      ).padStart(2, "0")}.${String(targetDate.getDate()).padStart(2, "0")}`;
+    const dateStr = `${targetDate.getFullYear()}.${String(
+      targetDate.getMonth() + 1
+    ).padStart(2, "0")}.${String(targetDate.getDate()).padStart(2, "0")}`;
 
-      const introIdx = i % CONTENT_PARTS.intro.length;
-      const middleIdx = (i * 3) % CONTENT_PARTS.middle.length;
-      const outroIdx = (i * 13) % CONTENT_PARTS.outro.length;
+    const introIdx = newestIndex % CONTENT_PARTS.intro.length;
+    const middleIdx = (newestIndex * 3) % CONTENT_PARTS.middle.length;
+    const outroIdx = (newestIndex * 13) % CONTENT_PARTS.outro.length;
 
-      const content =
-        i % 3 === 0
-          ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
-          : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
+    const content =
+      newestIndex % 3 === 0
+        ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
+        : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
 
-      const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const color = AVATAR_COLORS[newestIndex % AVATAR_COLORS.length];
 
-      allReviews.push({
-        id: i + 1,
-        name,
-        date: dateStr,
-        rating: 5,
-        content,
-        color,
-        timestamp: targetTimestamp,
-      });
-    }
+    allReviews.push({
+      id: i + 1,
+      name,
+      date: dateStr,
+      rating: 5,
+      content,
+      color,
+      timestamp: targetTimestamp,
+    });
+  }
 
-    return allReviews.sort((a, b) => b.timestamp - a.timestamp);
-  }, [dynamicCount]);
+  return allReviews.sort((a, b) => b.timestamp - a.timestamp);
+}, [dynamicCount]);
+
 
   const currentReviews = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;

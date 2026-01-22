@@ -230,9 +230,10 @@ const LiveStatus: React.FC<LiveStatusProps> = ({ cumulativeCount, reviewCount, o
   const [isUpdating, setIsUpdating] = useState(false);
 
   /** ✅ 누적 참여(명) = cumulativeCount 기반 */
-  const unifiedParticipantCount = useMemo(() => {
-    return calcUnifiedParticipantCount(cumulativeCount, Date.now());
-  }, [cumulativeCount]);
+const unifiedParticipantCount = useMemo(() => {
+  return cumulativeCount; // ✅ App.tsx에서 계산된 누적 참여를 그대로 표시
+}, [cumulativeCount]);
+
 
   /** ✅ 리뷰(건) 숫자만 유지 (LiveStatus 내부에서는 표시하지 않아도 됨) */
   const unifiedReviewCount = useMemo(() => {
