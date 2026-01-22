@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import Layout from "./components/Layout";
 import ReviewCarousel from "./components/ReviewCarousel";
 import ConsultationForm from "./components/ConsultationForm";
+import PremiumReportSection from "./components/PremiumReportSection";
+
 import LiveStatus from "./components/LiveStatus";
 import Promotion from "./components/Promotion";
 import AdminDashboard from "./components/AdminDashboard";
@@ -12,6 +14,22 @@ import { databaseService } from "./services/databaseService";
 // ---- 고정 상수 (컴포넌트 밖) ----
 const START_DATE_MS = new Date("2026-01-01").getTime();
 
+// ✅ 새로고침해도 유지되는 delta 저장 키/함수 (컴포넌트 밖)
+const LS_APP_DELTA_KEY = "omy_app_delta";
+const LS_REVIEW_DELTA_KEY = "omy_review_delta";
+
+function readDelta(key: string) {
+  if (typeof window === "undefined") return 0;
+  const v = Number(window.localStorage.getItem(key) ?? "0");
+  return Number.isFinite(v) ? v : 0;
+}
+function writeDelta(key: string, v: number) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(key, String(v));
+}
+
+
+
 function calcDynamicBaseCount(nowMs: number) {
   const START_COUNT = 13797;
   const diffDays = Math.floor((nowMs - START_DATE_MS) / (1000 * 60 * 60 * 24));
@@ -20,10 +38,8 @@ function calcDynamicBaseCount(nowMs: number) {
 }
 
 function calcInitialReviewCount(nowMs: number) {
-const baseReviews = 3500;
-
+  const baseReviews = 3500;
   const BASE_DATE_MS = new Date("2026-01-19T00:00:00+09:00").getTime();
-
   const days = Math.max(0, Math.floor((nowMs - BASE_DATE_MS) / (1000 * 60 * 60 * 24)));
 
   const dailyAdd = (dayIndex: number) => {
@@ -37,12 +53,10 @@ const baseReviews = 3500;
   return baseReviews + add;
 }
 
-
 // ✅ 1단계: App 화면 단계 타입
 type AppStep = "form" | "result";
 
 const App: React.FC = () => {
-  // ✅ 1단계: isFinished 대신 step
   const [step, setStep] = useState<AppStep>("form");
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -52,38 +66,87 @@ const App: React.FC = () => {
   const [showFloatingCta, setShowFloatingCta] = useState(false);
   const [adminClickCount, setAdminClickCount] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const [isUpdating, setIsUpdating] = useState(false);
 
-  const INITIAL_REVIEW_COUNT = useMemo(() => calcInitialReviewCount(Date.now()), []);
-  const [reviewCount, setReviewCount] = useState(INITIAL_REVIEW_COUNT);
+// ✅ base(시간으로 계산되는 기본값)
+const getBaseAppCount = (now: number) => {
+  const stored = databaseService.getAllApplications?.()?.length ?? 0;
+  return calcDynamicBaseCount(now) + stored;
+};
+const getBaseReviewCount = (now: number) => calcInitialReviewCount(now);
 
-  const [appCount, setAppCount] = useState(() => {
-    const now = Date.now();
-    const stored = databaseService.getAllApplications?.()?.length ?? 0;
-    return calcDynamicBaseCount(now) + stored;
+
+// ✅ delta(새로고침해도 유지되는 증가분)
+const [appDelta, setAppDelta] = useState(() => readDelta(LS_APP_DELTA_KEY));
+const [reviewDelta, setReviewDelta] = useState(() => readDelta(LS_REVIEW_DELTA_KEY));
+
+// ✅ [추가] App 시작 시 localStorage 값으로 delta 재동기화 (안정화)
+useEffect(() => {
+  setAppDelta(readDelta(LS_APP_DELTA_KEY));
+  setReviewDelta(readDelta(LS_REVIEW_DELTA_KEY));
+}, []);
+
+
+// ✅ 실제 표시/전달할 count
+const [appCount, setAppCount] = useState(() => getBaseAppCount(Date.now()) + readDelta(LS_APP_DELTA_KEY));
+const [reviewCount, setReviewCount] = useState(() => getBaseReviewCount(Date.now()) + readDelta(LS_REVIEW_DELTA_KEY));
+
+
+// ✅ 30초마다 base 재계산(시간 흐름 반영) + delta 유지
+const [nowTick, setNowTick] = useState(() => Date.now());
+useEffect(() => {
+  const id = setInterval(() => setNowTick(Date.now()), 30_000);
+  return () => clearInterval(id);
+}, []);
+
+useEffect(() => {
+  setAppCount(getBaseAppCount(nowTick) + appDelta);
+  setReviewCount(getBaseReviewCount(nowTick) + reviewDelta);
+}, [nowTick, appDelta, reviewDelta]);
+
+
+
+const bumpTopCounts = useCallback((appInc = 1, reviewInc = 1) => {
+  setIsUpdating(true);
+
+  // ✅ 화면 숫자도 즉시 반영 (안 튐)
+  setAppCount((prev) => prev + appInc);
+  setReviewCount((prev) => prev + reviewInc);
+
+  // ✅ delta 저장 (새로고침 유지)
+  setAppDelta((prev) => {
+    const next = prev + appInc;
+    writeDelta(LS_APP_DELTA_KEY, next);
+    return next;
   });
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  setReviewDelta((prev) => {
+    const next = prev + reviewInc;
+    writeDelta(LS_REVIEW_DELTA_KEY, next);
+    return next;
+  });
+
+  setTimeout(() => setIsUpdating(false), 2000);
+}, []);
+
+
+
+
 
   const scheduleNextTick = useCallback(() => {
-    // ✅ result 화면이면 카운트 업데이트 중단
     if (step === "result") return;
 
     const hour = new Date().getHours();
     let minMs: number;
     let maxMs: number;
 
-    // 새벽(1~7): 매우 느리게
     if (hour >= 1 && hour <= 7) {
       minMs = 60 * 60 * 1000;
       maxMs = 120 * 60 * 1000;
-    }
-    // 저녁(19~23): 빠르게
-    else if (hour >= 19 && hour <= 23) {
+    } else if (hour >= 19 && hour <= 23) {
       minMs = 10 * 60 * 1000;
       maxMs = 40 * 60 * 1000;
-    }
-    // 그 외: 보통
-    else {
+    } else {
       minMs = 20 * 60 * 1000;
       maxMs = 60 * 60 * 1000;
     }
@@ -91,14 +154,12 @@ const App: React.FC = () => {
     const randomDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
     timerRef.current = setTimeout(() => {
-      setIsUpdating(true);
-      setAppCount((prev) => prev + 1);
-      
+bumpTopCounts(1, 1);
 
-      setTimeout(() => setIsUpdating(false), 2000);
       scheduleNextTick();
     }, randomDelay);
-  }, [step]);
+  }, [step, bumpTopCounts]);
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -110,23 +171,21 @@ const App: React.FC = () => {
       setShowFloatingCta(window.scrollY > 500);
     };
 
-    const handleNewOrder = () => {
-      setIsUpdating(true);
-      setAppCount((prev) => prev + 1);
-      
-      setTimeout(() => setIsUpdating(false), 2000);
-    };
+
 
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("new-saju-application", handleNewOrder as EventListener);
+    
 
-    scheduleNextTick();
+    // ✅ 시작 전에 기존 타이머가 있으면 정리
+if (timerRef.current) clearTimeout(timerRef.current);
+scheduleNextTick();
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("new-saju-application", handleNewOrder as EventListener);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
+return () => {
+  window.removeEventListener("scroll", handleScroll);
+
+  if (timerRef.current) clearTimeout(timerRef.current);
+};
+
   }, [scheduleNextTick]);
 
   const handleSecretClick = () => {
@@ -141,19 +200,17 @@ const App: React.FC = () => {
     setTimeout(() => setAdminClickCount(0), 3000);
   };
 
-  const handleSimulatedUpdate = useCallback(() => {
-    setIsUpdating(true);
-    setTimeout(() => setIsUpdating(false), 2000);
-  }, []);
+const handleSimulatedUpdate = useCallback(() => {
+  bumpTopCounts(1, 1);
+}, [bumpTopCounts]);
 
-  // ✅ 완료되면 result 화면으로
+
   const handleComplete = () => {
     setError(null);
     setStep("result");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ 다시 form 화면으로
   const handleReset = () => {
     setError(null);
     setStep("form");
@@ -239,16 +296,20 @@ const App: React.FC = () => {
 
           <SummaryDashboard reviewCount={reviewCount} appCount={appCount} isUpdating={isUpdating} />
 
-          <div className="px-4 pt-2 sm:pt-4 pb-12">
-            <ReviewCarousel reviewCount={reviewCount} />
-            <ConsultationForm onComplete={handleComplete} isLoading={false} />
-            <LiveStatus
-  cumulativeCount={appCount}
-  reviewCount={reviewCount}
-  onUpdate={handleSimulatedUpdate}
-/>
+<div className="px-4 pt-2 sm:pt-4 pb-4">
+  <ReviewCarousel reviewCount={reviewCount} />
+  <ConsultationForm onComplete={handleComplete} isLoading={false} />
+</div>
 
-          </div>
+{/* ✅ LiveStatus는 pb 영향 없게 분리 + 아래 여백 최소화 */}
+<div className="px-4 pb-0 -mb-6">
+  <LiveStatus
+    cumulativeCount={appCount}
+    reviewCount={reviewCount}
+    onUpdate={handleSimulatedUpdate}
+  />
+</div>
+
 
           {showFloatingCta && (
             <div className="fixed bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 z-[200] w-[95%] max-w-2xl animate-in slide-in-from-bottom-full duration-700">
@@ -265,9 +326,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="text-white text-[18px] sm:text-[28px] font-black tracking-tighter flex items-center">
                       <span className="text-[#FFD966] mr-0.5 text-[14px] sm:text-[22px]">₩</span>29,800
-                      <span className="ml-1 text-slate-400 text-[9px] sm:text-[11px] font-bold opacity-80">
-                        (1인)
-                      </span>
+                      <span className="ml-1 text-slate-400 text-[9px] sm:text-[11px] font-bold opacity-80">(1인)</span>
                     </div>
                   </div>
 
@@ -284,9 +343,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="text-white text-[18px] sm:text-[28px] font-black tracking-tighter flex items-center">
                       <span className="text-[#FFD966] mr-0.5 text-[14px] sm:text-[22px]">₩</span>55,000
-                      <span className="ml-1 text-[#4A90E2] text-[9px] sm:text-[11px] font-bold">
-                        (2인+궁합)
-                      </span>
+                      <span className="ml-1 text-[#4A90E2] text-[9px] sm:text-[11px] font-bold">(2인+궁합)</span>
                     </div>
                   </div>
                 </div>
@@ -306,15 +363,24 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <div className="w-full py-20 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
-            <p
-              onClick={handleSecretClick}
-              className="text-[10px] text-slate-600 font-bold cursor-default select-none text-center"
-            >
-              © 2026 OmySaju Lab Myeong-ri Service. All rights reserved.<br />
-              본 서비스는 정통 명리학 데이터를 활용한 분석 결과로 참고용으로만 활용하시기 바랍니다.
-            </p>
-          </div>
+<div className="w-full py-20 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+  <p
+    onClick={handleSecretClick}
+    className="text-[10px] text-slate-600 font-bold cursor-default select-none text-center"
+  >
+    © 2026 OmySaju Lab Myeong-ri Service. All rights reserved.<br />
+    본 서비스는 정통 명리학 데이터를 활용한 분석 결과로 참고용으로만 활용하시기 바랍니다.
+  </p>
+</div>
+
+{/* ✅ 진짜 페이지 맨 마지막: 프리미엄 리포트 구성 */}
+<div className="px-4 pb-12">
+  <PremiumReportSection />
+</div>
+
+{/* ✅ 하단 여백: 고정 CTA가 마지막 카드 가리지 않게 */}
+<div className="h-32" />
+
         </>
       ) : (
         <div className="min-h-screen w-full bg-[#02040a] flex flex-col items-center justify-center text-center px-4 py-20 animate-in fade-in duration-1000 relative">
