@@ -35,18 +35,18 @@ const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
   }, []);
 
   return (
-    <div className="w-full bg-[#02040a] px-4 pt-12 sm:pt-24 pb-4 sm:pb-6">
+    <div className="w-full bg-[#02040a] px-4 pt-6 sm:pt-12 pb-4 sm:pb-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
         {/* ✅ 후기 요약 카드 (실시간 누적 = reviewCount) */}
-        <div className="group bg-[#0a0c14] border border-white/10 rounded-[40px] sm:rounded-[60px] p-10 sm:p-20 flex flex-col items-center justify-center text-center transition-all hover:bg-[#11141d] hover:border-white/20 shadow-2xl relative overflow-hidden">
+        <div className="group bg-[#0a0c14] border border-white/10 rounded-[40px] sm:rounded-[60px] p-6 sm:p-12 flex flex-col items-center justify-center text-center transition-all hover:bg-[#11141d] hover:border-white/20 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#C02128]/20 to-transparent" />
 
-          <h3 className="text-white text-[22px] sm:text-[42px] font-black tracking-tighter mb-10 sm:mb-20">
+          <h3 className="text-white text-[22px] sm:text-[42px] font-black tracking-tighter mb-6 sm:mb-10">
             고객님들 후기
           </h3>
 
           <div className="flex flex-col items-center">
-            <span className="text-slate-500 text-[12px] sm:text-[18px] font-black uppercase tracking-[0.3em] mb-8 sm:mb-14 opacity-60">
+            <span className="text-slate-500 text-[12px] sm:text-[18px] font-black uppercase tracking-[0.3em] mb-6 sm:mb-10 opacity-60">
               Reviews Total
             </span>
 
@@ -66,7 +66,7 @@ const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
               </div>
             </div>
 
-            <div className="mt-12 sm:mt-20 flex items-center gap-3 bg-green-500/10 text-green-500 px-7 py-3 rounded-full border border-green-500/20 text-[12px] sm:text-[17px] font-black animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+            <div className="mt-6 sm:mt-10 flex items-center gap-3 bg-green-500/10 text-green-500 px-7 py-3 rounded-full border border-green-500/20 text-[12px] sm:text-[17px] font-black animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.2)]">
               <span className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.9)]" />
               LIVE CONNECTED
             </div>
@@ -75,18 +75,18 @@ const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
 
         {/* ✅ 접수 현황 요약 카드 (누적 참여 = appCount) */}
         <div
-          className={`group bg-[#0a0c14] border border-white/10 rounded-[40px] sm:rounded-[60px] p-10 sm:p-20 flex flex-col items-center justify-center text-center transition-all hover:bg-[#11141d] hover:border-white/20 shadow-2xl relative overflow-hidden ${
+          className={`group bg-[#0a0c14] border border-white/10 rounded-[40px] sm:rounded-[60px] p-6 sm:p-12 flex flex-col items-center justify-center text-center transition-all hover:bg-[#11141d] hover:border-white/20 shadow-2xl relative overflow-hidden ${
             isUpdating ? "ring-2 ring-[#C02128]/40 shadow-[0_0_60px_rgba(192,33,40,0.2)]" : ""
           }`}
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#C02128]/20 to-transparent" />
 
-          <h3 className="text-white text-[22px] sm:text-[42px] font-black tracking-tighter mb-10 sm:mb-20">
+          <h3 className="text-white text-[22px] sm:text-[42px] font-black tracking-tighter mb-6 sm:mb-10">
             실시간 접수 현황
           </h3>
 
           <div className="flex flex-col items-center">
-            <span className="text-slate-500 text-[12px] sm:text-[18px] font-black uppercase tracking-[0.3em] mb-8 sm:mb-14 opacity-60">
+            <span className="text-slate-500 text-[12px] sm:text-[18px] font-black uppercase tracking-[0.3em] mb-6 sm:mb-10 opacity-60">
               Applications Total
             </span>
 
@@ -106,7 +106,7 @@ const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
               </div>
             </div>
 
-            <div className="mt-12 sm:mt-20 flex items-center gap-3 bg-green-500/10 text-green-500 px-7 py-3 rounded-full border border-green-500/20 text-[12px] sm:text-[17px] font-black animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+            <div className="mt-6 sm:mt-10 flex items-center gap-3 bg-green-500/10 text-green-500 px-7 py-3 rounded-full border border-green-500/20 text-[12px] sm:text-[17px] font-black animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.2)]">
               <span className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.9)]" />
               LIVE CONNECTED
             </div>

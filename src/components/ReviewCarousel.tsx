@@ -258,10 +258,11 @@ const REVIEWS = useMemo(() => {
   };
 
   return (
-    <div
-      className="w-full max-w-4xl mx-auto mt-4 sm:mt-6 bg-white rounded-[32px] sm:rounded-[48px] overflow-hidden border border-gray-100 shadow-xl"
-      id="reviews-top"
-    >
+<div
+  className="w-full max-w-4xl mx-auto mt-2 sm:mt-3 bg-white rounded-[32px] sm:rounded-[48px] overflow-hidden border border-gray-100 shadow-xl"
+  id="reviews-top"
+>
+
       <div className="px-6 sm:px-10 py-5 sm:py-7 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/50 gap-4">
         <div>
           <h3 className="font-black text-slate-800 text-lg sm:text-2xl tracking-tighter">

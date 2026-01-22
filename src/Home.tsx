@@ -133,32 +133,61 @@ const bumpTopCounts = useCallback((appInc = 1, reviewInc = 1) => {
 
 
 
-  const scheduleNextTick = useCallback(() => {
-    if (step === "result") return;
+// ✅ 하루 목표
+const DAILY_TARGET = 40;
 
-    const hour = new Date().getHours();
-    let minMs: number;
-    let maxMs: number;
+// 시간대별 가중치: 새벽↓, 낮 보통, 저녁↑
+function getHourWeight(hour: number) {
+  if (hour >= 1 && hour <= 6) return 0.35;     // 새벽
+  if (hour >= 7 && hour <= 11) return 0.9;     // 오전
+  if (hour >= 12 && hour <= 17) return 1.0;    // 오후
+  if (hour >= 18 && hour <= 23) return 1.6;    // 저녁
+  return 0.7; // 0시
+}
 
-    if (hour >= 1 && hour <= 7) {
-      minMs = 60 * 60 * 1000;
-      maxMs = 120 * 60 * 1000;
-    } else if (hour >= 19 && hour <= 23) {
-      minMs = 10 * 60 * 1000;
-      maxMs = 40 * 60 * 1000;
-    } else {
-      minMs = 20 * 60 * 1000;
-      maxMs = 60 * 60 * 1000;
-    }
+function getTodayRangeMs(now = new Date()) {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { startMs: start.getTime(), endMs: end.getTime() };
+}
 
-    const randomDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+const scheduleNextTick = useCallback(() => {
+  if (step === "result") return;
 
-    timerRef.current = setTimeout(() => {
-bumpTopCounts(1, 1);
+  const now = new Date();
+  const nowMs = now.getTime();
+  const hour = now.getHours();
 
-      scheduleNextTick();
-    }, randomDelay);
-  }, [step, bumpTopCounts]);
+  const target = DAILY_TARGET;
+
+  const { endMs } = getTodayRangeMs(now);
+  const remainingMs = Math.max(60_000, endMs - nowMs); // 최소 1분
+
+  const w = getHourWeight(hour);
+
+  // 평균 간격 = 남은시간 / (목표 * 가중치)
+  let meanMs = remainingMs / Math.max(1, target * w);
+
+  // 너무 짧거나 길어지지 않게 제한
+  const MIN_MS = 2 * 60 * 1000;   // 최소 2분
+  const MAX_MS = 45 * 60 * 1000;  // 최대 45분
+  meanMs = Math.min(MAX_MS, Math.max(MIN_MS, meanMs));
+
+  // 랜덤성 추가(±35%)
+  const jitter = 0.65 + Math.random() * 0.7; // 0.65~1.35
+  const delayMs = Math.floor(meanMs * jitter);
+
+  if (timerRef.current) clearTimeout(timerRef.current);
+
+  timerRef.current = setTimeout(() => {
+    bumpTopCounts(1, 1);
+    scheduleNextTick(); // 다음 예약
+  }, delayMs);
+}, [step, bumpTopCounts]);
+
+
 
 
   useEffect(() => {
@@ -296,10 +325,11 @@ const handleSimulatedUpdate = useCallback(() => {
 
           <SummaryDashboard reviewCount={reviewCount} appCount={appCount} isUpdating={isUpdating} />
 
-<div className="px-4 pt-2 sm:pt-4 pb-4">
+<div className="px-4 pt-2 sm:pt-4 pb-2 space-y-3 sm:space-y-4">
   <ReviewCarousel reviewCount={reviewCount} />
   <ConsultationForm onComplete={handleComplete} isLoading={false} />
 </div>
+
 
 {/* ✅ LiveStatus는 pb 영향 없게 분리 + 아래 여백 최소화 */}
 <div className="px-4 pb-0 -mb-6">
@@ -363,7 +393,18 @@ const handleSimulatedUpdate = useCallback(() => {
             </div>
           )}
 
-<div className="w-full py-20 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+
+
+{/* ✅ 진짜 페이지 맨 마지막: 프리미엄 리포트 구성 */}
+<div className="px-4 pb-12">
+  <PremiumReportSection />
+</div>
+
+{/* ✅ 하단 여백: 고정 CTA가 마지막 카드 가리지 않게 */}
+<div className="h-2" />
+
+{/* ✅ (맨 아래로 이동) 5번 클릭 관리자 진입 트리거 */}
+<div className="w-full pb-16 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
   <p
     onClick={handleSecretClick}
     className="text-[10px] text-slate-600 font-bold cursor-default select-none text-center"
@@ -372,14 +413,6 @@ const handleSimulatedUpdate = useCallback(() => {
     본 서비스는 정통 명리학 데이터를 활용한 분석 결과로 참고용으로만 활용하시기 바랍니다.
   </p>
 </div>
-
-{/* ✅ 진짜 페이지 맨 마지막: 프리미엄 리포트 구성 */}
-<div className="px-4 pb-12">
-  <PremiumReportSection />
-</div>
-
-{/* ✅ 하단 여백: 고정 CTA가 마지막 카드 가리지 않게 */}
-<div className="h-32" />
 
         </>
       ) : (

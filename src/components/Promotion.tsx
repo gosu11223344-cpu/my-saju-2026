@@ -199,17 +199,7 @@ const Promotion: React.FC = () => {
               </div>
             </h2>
 
-            <div className="max-w-3xl mx-auto pt-4 space-y-6">
-              <div className="bg-white/5 border border-[#FFD966]/20 rounded-[32px] p-8 sm:p-12 backdrop-blur-xl relative overflow-hidden group shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/oriental-tiles.png')]" />
-                <p className="gold-shimmer text-[18px] sm:text-[28px] md:text-[34px] font-black tracking-tighter leading-tight mb-4 relative z-10 drop-shadow-[0_0_15px_rgba(255,217,102,0.4)]">
-                  평생운의 큰 흐름 + 2026년 월별 핵심 운세
-                </p>
-                <p className="gold-shimmer text-[16px] sm:text-[24px] md:text-[28px] font-black tracking-tighter italic relative z-10 leading-tight underline underline-offset-8 decoration-white/20">
-                  &quot;이미 13,000명이 넘는 분들이 인생의 지도를 얻어갔습니다.&quot;
-                </p>
-              </div>
-            </div>
+
           </div>
 
           <div className="relative group perspective-2000 mt-8 sm:mt-12 w-full max-w-[960px]">
@@ -327,63 +317,65 @@ const Promotion: React.FC = () => {
         </div>
 
         {/* 메인 가격 박스 - 프리미엄 인생 분석서 */}
-        <div className="max-w-2xl mx-auto price-box rounded-[40px] sm:rounded-[80px] p-12 sm:p-20 mb-16 transform hover:scale-[1.03] transition-all duration-500 flex flex-col items-center justify-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD966]/5 blur-3xl rounded-full" />
+<div className="max-w-2xl mx-auto price-box rounded-[40px] sm:rounded-[80px] p-7 sm:p-12 mb-10 sm:mb-12 transform hover:scale-[1.03] transition-all duration-500 flex flex-col items-center justify-center relative overflow-hidden">
+  <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD966]/5 blur-3xl rounded-full" />
 
-          <div className="text-[#FFD966] text-[20px] sm:text-[35px] font-black tracking-tighter mb-4 sm:mb-8 flex items-center gap-2">
-            💎 프리미엄 인생 분석서
-          </div>
+  <div className="text-[#FFD966] text-[20px] sm:text-[35px] font-black tracking-tighter mb-3 sm:mb-5 flex items-center gap-2">
+    💎 프리미엄 인생 분석서
+  </div>
 
-          <div className="text-slate-500 text-[26px] sm:text-[50px] line-through mb-4 font-bold opacity-30 tracking-tight italic">
-            원가 55,000원
-          </div>
+  <div className="text-slate-500 text-[26px] sm:text-[50px] line-through mb-3 font-bold opacity-30 tracking-tight italic">
+    원가 55,000원
+  </div>
 
-          <div className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-14">
-            <span className="bg-[#C02128] text-white text-[14px] sm:text-[20px] px-5 py-2 rounded-full font-black animate-pulse shadow-lg tracking-widest">
-              한정 특가 이벤트
-            </span>
-            <div className="text-[#FFD966] text-[20px] sm:text-[32px] font-black flex items-center gap-2 tracking-tighter uppercase">
-              46% 할인중
-            </div>
-          </div>
+  <div className="flex items-center gap-4 sm:gap-6 mb-5 sm:mb-8">
+    <span className="bg-[#C02128] text-white text-[14px] sm:text-[20px] px-5 py-2 rounded-full font-black animate-pulse shadow-lg tracking-widest">
+      한정 특가 이벤트
+    </span>
+    <div className="text-[#FFD966] text-[20px] sm:text-[32px] font-black flex items-center gap-2 tracking-tighter uppercase">
+      46% 할인중
+    </div>
+  </div>
 
-          <div className="text-white text-[60px] sm:text-[90px] md:text-[120px] font-black flex items-center justify-center gap-2 sm:gap-3 tracking-tighter leading-none">
-            <span className="text-2xl sm:text-6xl text-amber-500 font-black">₩</span> 29,800
-          </div>
-        </div>
+  <div className="text-white text-[60px] sm:text-[90px] md:text-[120px] font-black flex items-center justify-center gap-2 sm:gap-3 tracking-tighter leading-none">
+    <span className="text-2xl sm:text-6xl text-amber-500 font-black">₩</span> 29,800
+  </div>
+</div>
 
-        {/* 2인 동시 신청 섹션 */}
-        <div className="w-full max-w-2xl mx-auto mb-4 sm:mb-6 bg-white/5 py-12 sm:py-20 px-8 sm:px-14 rounded-[40px] sm:rounded-[80px] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden transform hover:scale-[1.03] transition-all duration-500">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
-          <div className="flex flex-col items-center relative z-10">
-            <div className="flex items-center gap-3 sm:gap-6 mb-6 sm:mb-10 w-full justify-center">
-              <span className="bg-[#C02128] text-white text-[12px] sm:text-[20px] px-4 sm:px-6 py-2 rounded-full font-black animate-pulse shadow-[0_0_20px_rgba(192,33,40,0.4)] whitespace-nowrap">
-                50% OFF
-              </span>
-              <span className="text-[#FFD966] font-black text-[18px] sm:text-[42px] tracking-tighter whitespace-nowrap">
-                💑 2인 동시 신청 시
-              </span>
-            </div>
+{/* 2인 동시 신청 섹션 */}
+<div className="w-full max-w-2xl mx-auto mb-3 sm:mb-4 bg-white/5 py-7 sm:py-12 px-5 sm:px-8 rounded-[40px] sm:rounded-[80px] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden transform hover:scale-[1.03] transition-all duration-500">
+  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
-            <div className="text-slate-500 text-[20px] sm:text-[40px] font-bold line-through opacity-40 mb-2 sm:mb-4 tracking-tight italic">
-              원가 110,000원
-            </div>
+  <div className="flex flex-col items-center relative z-10">
+    <div className="flex items-center gap-3 sm:gap-6 mb-4 sm:mb-6 w-full justify-center">
+      <span className="bg-[#C02128] text-white text-[12px] sm:text-[20px] px-4 sm:px-6 py-2 rounded-full font-black animate-pulse shadow-[0_0_20px_rgba(192,33,40,0.4)] whitespace-nowrap">
+        50% OFF
+      </span>
+      <span className="text-[#FFD966] font-black text-[18px] sm:text-[42px] tracking-tighter whitespace-nowrap">
+        💑 2인 동시 신청 시
+      </span>
+    </div>
 
-            <div className="text-white text-[56px] sm:text-[100px] md:text-[130px] font-black flex items-center justify-center gap-2 sm:gap-3 tracking-tighter mb-8 sm:mb-12 leading-none drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
-              <span className="text-2xl sm:text-7xl text-amber-500 font-black">₩</span> 55,000
-            </div>
+    <div className="text-slate-500 text-[20px] sm:text-[40px] font-bold line-through opacity-40 mb-2 sm:mb-3 tracking-tight italic">
+      원가 110,000원
+    </div>
 
-            <div className="flex flex-col items-center gap-2 sm:gap-4 w-full">
-              <span className="text-white text-[15px] sm:text-[30px] font-black tracking-tight bg-[#C02128]/20 px-4 sm:px-8 py-2 sm:py-3 rounded-xl border border-[#C02128]/40 whitespace-nowrap">
-                궁합 분석 서비스 무료 포함
-              </span>
-              <span className="text-white/40 text-[11px] sm:text-[18px] font-bold tracking-tight opacity-60">
-                (필요 시 두 분의 인연법을 정밀 분석해 드립니다)
-              </span>
-            </div>
-          </div>
-        </div>
+    <div className="text-white text-[56px] sm:text-[100px] md:text-[130px] font-black flex items-center justify-center gap-2 sm:gap-3 tracking-tighter mb-5 sm:mb-7 leading-none drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+      <span className="text-2xl sm:text-7xl text-amber-500 font-black">₩</span> 55,000
+    </div>
+
+    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
+      <span className="text-white text-[15px] sm:text-[30px] font-black tracking-tight bg-[#C02128]/20 px-4 sm:px-8 py-2 sm:py-3 rounded-xl border border-[#C02128]/40 whitespace-nowrap">
+        궁합 분석 서비스 무료 포함
+      </span>
+      <span className="text-white/40 text-[11px] sm:text-[18px] font-bold tracking-tight opacity-60">
+        (필요 시 두 분의 인연법을 정밀 분석해 드립니다)
+      </span>
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
   );

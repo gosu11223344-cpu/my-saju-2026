@@ -5,7 +5,7 @@ const PremiumReportSection: React.FC = () => {
     // ✅ PC에서 좌우 폭 과도해지는 문제 해결:
     // - mx-auto + max-w 로 전체 폭 제한
     // - 패딩을 sm:p-20 → sm:p-12 lg:p-16 으로 줄여 PC에서 덜 넓어 보이게
-<div className="mx-auto w-full max-w-5xl -mt-8 bg-[#050a14] rounded-[40px] sm:rounded-[60px] p-8 sm:p-12 lg:p-16 shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden border border-white/5">
+<div className="mx-auto w-full max-w-5xl -mt-20 bg-[#050a14] rounded-[40px] sm:rounded-[60px] p-8 sm:p-12 lg:p-16 shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative overflow-hidden border border-white/5">
 
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(255,217,102,0.1)_0%,transparent_70%)] opacity-50"></div>
 
@@ -39,31 +39,38 @@ const PremiumReportSection: React.FC = () => {
               <div className="absolute inset-0 bg-white/5 rounded-full blur-xl group-hover:bg-[#FFD966]/20 transition-all"></div>
               <span className="relative z-10">{item.icon}</span>
             </div>
-            <div>
-              <div className="text-[#FFD966] text-[11px] sm:text-[13px] font-black tracking-widest uppercase mb-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                {item.part}
-              </div>
-              <h4 className="text-white text-[17px] sm:text-[22px] font-black tracking-tighter mb-1">
-                {item.title}
-              </h4>
-              <p className="text-slate-500 text-[12px] sm:text-[15px] font-bold group-hover:text-slate-300 transition-colors">
-                {item.desc}
-              </p>
-            </div>
+<div>
+  {/* PART 라벨 */}
+  <div className="text-[#FFD966] text-[13px] sm:text-[15px] font-black tracking-widest uppercase mb-1 opacity-90">
+    {item.part}
+  </div>
+
+  {/* 제목 */}
+  <h4 className="text-white text-[20px] sm:text-[26px] font-black tracking-tighter mb-1 leading-tight">
+    {item.title}
+  </h4>
+
+  {/* 설명 */}
+  <p className="text-slate-400 text-[14px] sm:text-[18px] font-bold leading-snug">
+    {item.desc}
+  </p>
+</div>
+
           </div>
         ))}
       </div>
 
-      <div className="mt-16 sm:mt-20 pt-10 border-t border-white/10 text-center">
+      <div className="mt-8 sm:mt-10 pt-6 border-t border-white/10 text-center">
         <div className="inline-flex items-center gap-3 bg-white/5 px-6 py-3 rounded-full border border-white/10">
           <span className="w-2 h-2 bg-[#FFD966] rounded-full animate-pulse"></span>
-          <p className="text-[#FFD966] text-[13px] sm:text-[18px] font-black italic tracking-tight">
-            * 모든 항목이 포함된{" "}
-            <span className="text-white underline underline-offset-4 decoration-[#FFD966]">
-              120페이지 PDF 분석서
-            </span>
-            가 발송됩니다.
-          </p>
+<p className="text-[#FFD966] text-[18px] sm:text-[25px] font-black italic tracking-tight leading-tight">
+  * 모든 항목이 포함된{" "}
+  <span className="text-white underline underline-offset-4 decoration-[#FFD966]">
+    약 120~150 페이지 PDF 분석서
+  </span>
+  가 발송됩니다.
+</p>
+
         </div>
       </div>
     </div>

@@ -303,7 +303,8 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
           <>
 
 
-            <div className="space-y-6 sm:space-y-12 pt-12 sm:pt-20">
+            <div className="space-y-6 sm:space-y-12 pt-6 sm:pt-4">
+
               {companions.map((companion, index) => (
                 <div key={companion.id} className={`bg-white rounded-[24px] sm:rounded-[48px] border-[2px] p-6 sm:p-10 md:p-14 space-y-6 sm:space-y-10 relative shadow-xl transition-all duration-500 ${companion.product === 'couple' ? 'border-amber-400 bg-amber-50/10' : 'border-[#FFD966]'}`}>
                   <div className="flex justify-between items-center border-b border-gray-50 pb-4 sm:pb-6">
