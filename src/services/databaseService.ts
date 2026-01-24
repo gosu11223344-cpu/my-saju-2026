@@ -3,7 +3,7 @@ import type { ApplicationRecord } from "../types";
 const DB_KEY = "saju_applications_v1";
 
 // 배포 후 받은 Apps Script URL
-const GOOGLE_SHEET_URL =  "https://script.google.com/macros/s/AKfycbxb53BLRazDymAr2GrYAn3PfPOfriwnkG8y89WkkiQXhK9_lbKOYs_YmLZ_QQJpTR4z/exec";
+const GOOGLE_SHEET_URL =  "https://script.google.com/macros/s/AKfycby6zH7k9MYFKfiDEEGaLV8Jldp_2NZt3oJAXoYw24kWubXo5ule683CROwlA82eJwjs/exec";
 
 
 // 상태 우선순위 (모르는 상태가 와도 안전하게 처리)
