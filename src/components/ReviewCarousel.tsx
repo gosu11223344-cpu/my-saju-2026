@@ -93,44 +93,55 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount, reviewStat
     setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
 
-  const REVIEWS = useMemo(() => {
-    const total = Math.max(0, dynamicCount);
-    if (total === 0) return [];
+const REVIEWS = useMemo(() => {
+  const total = Math.max(0, dynamicCount);
+  if (total === 0) return [];
 
-    // ✅ 오늘 0시(로컬)
-    const today0 = new Date();
-    today0.setHours(0, 0, 0, 0);
+  // ✅ reviewStats(= Home에서 계산된 날짜별 count) 합
+  const stats = Array.isArray(reviewStats) ? reviewStats : [];
+  const statsSum = stats.reduce((s, d) => s + (d?.count ?? 0), 0);
 
-    // ✅ 필요한 일수 (sum>=total)
-    const daysNeeded = estimateStartDaysNeeded(total);
+  // ✅ reviewCount(누적) 중, reviewStats로 설명되지 않는 나머지(=베이스 3500 같은 부분)
+  const baseExtra = Math.max(0, total - statsSum);
 
-    // ✅ 핵심 수정: "오늘 포함"되도록 시작일을 잡음 (daysNeeded-1일 전)
-    const startDate = new Date(today0);
-    startDate.setDate(startDate.getDate() - (daysNeeded - 1));
+  // ✅ reviewStats 첫 날짜(없으면 오늘)
+  const firstStatDateStr = stats[0]?.date; // "YYYY-MM-DD"
+  const firstStatDate = firstStatDateStr
+    ? new Date(`${firstStatDateStr}T00:00:00+09:00`)
+    : new Date();
 
-    // ✅ 먼저 daysNeeded일의 "하루 6~12 패턴" 용량을 만든다
+  // ---- (A) baseExtra를 reviewStats 시작일 이전 날짜들에 채우기 ----
+  const baseAll: Review[] = [];
+  let id = 1;
+
+  if (baseExtra > 0) {
+    const daysNeeded = estimateStartDaysNeeded(baseExtra);
+
+    // reviewStats 시작일의 "전날 0시(KST)"를 끝점으로 잡고, 그 이전으로 daysNeeded일 생성
+    const endDate0 = new Date(firstStatDate);
+    endDate0.setDate(endDate0.getDate() - 1);
+    endDate0.setHours(0, 0, 0, 0);
+
+    const startDate0 = new Date(endDate0);
+    startDate0.setDate(endDate0.getDate() - (daysNeeded - 1));
+
+    // dayCounts 만들고 baseExtra에 맞게 “가장 오래된 날부터” 잘라내기
     const dayCounts = Array.from({ length: daysNeeded }, (_, idx) => dailyCountByIndex(idx));
     const capacity = dayCounts.reduce((s, n) => s + n, 0);
 
-    // ✅ total보다 초과된 수량은 "가장 오래된 날짜부터" 깎는다
-    //    -> 최근(어제/오늘)은 6~12개를 유지하게 됨
-    let excess = Math.max(0, capacity - total);
+    let excess = Math.max(0, capacity - baseExtra);
     for (let i = 0; i < dayCounts.length && excess > 0; i++) {
       const cut = Math.min(excess, dayCounts[i]);
       dayCounts[i] -= cut;
       excess -= cut;
     }
 
-    // ✅ 이제 dayCounts대로 실제 리뷰 생성 (총 개수 = total 정확히 일치)
-    const all: Review[] = [];
-    let id = 1;
-
     for (let dayIndex = 0; dayIndex < daysNeeded; dayIndex++) {
       const cnt = dayCounts[dayIndex];
       if (cnt <= 0) continue;
 
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + dayIndex);
+      const currentDate = new Date(startDate0);
+      currentDate.setDate(startDate0.getDate() + dayIndex);
 
       for (let i = 0; i < cnt; i++) {
         const firstName = FIRST_NAMES[id % FIRST_NAMES.length];
@@ -149,23 +160,79 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount, reviewStat
             ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
             : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
 
-        all.push({
+        baseAll.push({
           id,
           name: firstName + lastName,
           date: dateStr,
           rating: 5,
           content,
           color: AVATAR_COLORS[id % AVATAR_COLORS.length],
-          // 하루 내 시간 분산(최대 12개라 0~11시로 충분)
-          timestamp: currentDate.getTime() + i * 60 * 60 * 1000,
+          // 하루 내 분산(0~23시)
+          timestamp: currentDate.getTime() + ((i % 24) * 60 * 60 * 1000),
         });
 
         id++;
       }
     }
+  }
 
-    return all.sort((a, b) => b.timestamp - a.timestamp);
-  }, [dynamicCount]);
+  // ---- (B) reviewStats 날짜/카운트 그대로 생성 (오늘은 “부분 카운트”가 그대로 반영됨) ----
+  const statAll: Review[] = [];
+
+  for (let sIdx = 0; sIdx < stats.length; sIdx++) {
+  const d = stats[sIdx];
+  if (!d?.date) continue;
+
+  const isTodayRow = sIdx === stats.length - 1;
+
+  const raw = Math.max(0, d?.count ?? 0);
+  const expected = dailyCountByIndex(sIdx); // ✅ 6~12 규칙 (base date 기준 dayIndex)
+
+  // ✅ 오늘(마지막 행)만 부분 카운트 허용 (0~expected)
+  // ✅ 어제/이전은 무조건 expected 보장 (raw가 1 같은 잘못된 값이면 보정)
+  const cnt = isTodayRow ? Math.min(raw, expected) : Math.max(raw, expected);
+
+  if (cnt <= 0) continue;
+
+  const day0 = new Date(`${d.date}T00:00:00+09:00`);
+
+  for (let i = 0; i < cnt; i++) {
+    const firstName = FIRST_NAMES[id % FIRST_NAMES.length];
+    const lastName = LAST_NAMES[(id * 7) % LAST_NAMES.length];
+
+    const dateStr = `${day0.getFullYear()}.${String(day0.getMonth() + 1).padStart(2, "0")}.${String(
+      day0.getDate()
+    ).padStart(2, "0")}`;
+
+    const introIdx = id % CONTENT_PARTS.intro.length;
+    const middleIdx = (id * 3) % CONTENT_PARTS.middle.length;
+    const outroIdx = (id * 13) % CONTENT_PARTS.outro.length;
+
+    const content =
+      id % 3 === 0
+        ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
+        : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
+
+    statAll.push({
+      id,
+      name: firstName + lastName,
+      date: dateStr,
+      rating: 5,
+      content,
+      color: AVATAR_COLORS[id % AVATAR_COLORS.length],
+      timestamp: day0.getTime() + ((i % 24) * 60 * 60 * 1000),
+    });
+
+    id++;
+  }
+}
+
+
+  // ✅ 합치고 최신순 정렬
+  const all = [...baseAll, ...statAll].slice(0, total);
+  return all.sort((a, b) => b.timestamp - a.timestamp);
+}, [dynamicCount, reviewStats]);
+
 
   const currentReviews = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;

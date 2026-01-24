@@ -88,27 +88,29 @@ function reviewRand01(seed: number) {
   return x / 233280;
 }
 
-// 하루 안에서 "후기 +1이 일어나는 시각(ms)" 생성
 function buildReviewScheduleMs(dayIndex: number) {
   const n = reviewDailyAdd(dayIndex);
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   const times: number[] = [];
+
+  // ✅ 하루를 n개 구간으로 나누고, 각 구간 안에서 랜덤 1개씩
+  // → 24시간 전체에 고르게 분산됨 (총 6~12개 유지)
   for (let i = 0; i < n; i++) {
+    const segmentStart = Math.floor((i * DAY_MS) / n);
+    const segmentEnd = Math.floor(((i + 1) * DAY_MS) / n);
+
     const seed = dayIndex * 1000 + i * 17 + 9;
-    const t = Math.floor(reviewRand01(seed) * 24 * 60 * 60 * 1000); // 0~24h
+    const r = reviewRand01(seed);
+
+    const t = Math.floor(segmentStart + r * (segmentEnd - segmentStart));
     times.push(t);
   }
-  times.sort((a, b) => a - b);
 
-  // 너무 붙어있는 경우: 최소 2시간 느낌 유지
-  const MIN_GAP = 2 * 60 * 60 * 1000; // 2h
-  for (let i = 1; i < times.length; i++) {
-    if (times[i] - times[i - 1] < MIN_GAP) {
-      times[i] = Math.min(times[i - 1] + MIN_GAP, 24 * 60 * 60 * 1000 - 1);
-    }
-  }
-  return times;
+  return times.sort((a, b) => a - b);
 }
+
+
 
 type ReviewDayStat = {
   date: string; // YYYY-MM-DD
@@ -117,23 +119,34 @@ type ReviewDayStat = {
 
 function calcReviewStats(nowMs: number): ReviewDayStat[] {
   const DAY_MS = 24 * 60 * 60 * 1000;
-  const days = Math.max(0, Math.floor((nowMs - REVIEW_BASE_DATE_MS) / DAY_MS));
+  const KST_OFFSET = 9 * 60 * 60 * 1000;
+
+  // ✅ KST 기준 dayIndex
+  const kstDayIndex = (ms: number) => Math.floor((ms + KST_OFFSET) / DAY_MS);
+
+  const baseDay = kstDayIndex(REVIEW_BASE_DATE_MS);
+  const nowDay = kstDayIndex(nowMs);
+
+  const days = Math.max(0, nowDay - baseDay);
 
   const stats: ReviewDayStat[] = [];
 
   for (let d = 0; d <= days; d++) {
-    const dayStart = REVIEW_BASE_DATE_MS + d * DAY_MS;
-    const dateObj = new Date(dayStart);
+    // ✅ d번째 날짜의 "KST 00:00"을 UTC ms로 만든 값
+    const dayStart = (baseDay + d) * DAY_MS - KST_OFFSET;
 
-    const dateStr = `${dateObj.getFullYear()}-${String(
-      dateObj.getMonth() + 1
-    ).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+    // ✅ 날짜 문자열(런타임 timezone 영향 제거)
+    const kstDate = new Date(dayStart + KST_OFFSET); // KST 시각을 UTC로 옮겨 담기
+    const y = kstDate.getUTCFullYear();
+    const m = String(kstDate.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(kstDate.getUTCDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${dd}`;
 
-    let count = reviewDailyAdd(d);
+    let count = reviewDailyAdd(d); // ✅ 기본: 과거 날짜는 무조건 6~12
 
-    // 오늘은 "이미 지난 스케줄만"
+    // ✅ "오늘"만 부분 카운트 허용
     if (d === days) {
-      const msIntoDay = Math.max(0, nowMs - dayStart);
+      const msIntoDay = Math.min(DAY_MS - 1, Math.max(0, nowMs - dayStart));
       const schedule = buildReviewScheduleMs(d);
       count = schedule.filter((t) => t <= msIntoDay).length;
     }
@@ -143,6 +156,9 @@ function calcReviewStats(nowMs: number): ReviewDayStat[] {
 
   return stats;
 }
+
+
+
 
 // ✅ 1단계: App 화면 단계 타입
 type AppStep = "form" | "result";
