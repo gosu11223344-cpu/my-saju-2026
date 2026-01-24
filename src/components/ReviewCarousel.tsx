@@ -10,65 +10,27 @@ interface Review {
   timestamp: number;
 }
 
+interface ReviewDayStat {
+  date: string;
+  count: number;
+}
+
 interface ReviewCarouselProps {
   reviewCount: number;
+  reviewStats: ReviewDayStat[]; // (호환 유지용) 현재 로직에서는 사용 안 함
 }
 
 const FIRST_NAMES = [
-  "김",
-  "이",
-  "박",
-  "최",
-  "정",
-  "강",
-  "조",
-  "윤",
-  "장",
-  "임",
-  "한",
-  "오",
-  "서",
-  "신",
-  "권",
-  "황",
-  "안",
-  "송",
-  "전",
-  "홍",
+  "김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권","황","안","송","전","홍",
 ];
 
 const LAST_NAMES = [
-  "*훈",
-  "*희",
-  "*영",
-  "*준",
-  "*현",
-  "*민",
-  "*서",
-  "*진",
-  "*우",
-  "*아",
-  "*은",
-  "*재",
-  "*윤",
-  "*호",
-  "*빈",
-  "*성",
-  "*연",
-  "*주",
+  "*훈","*희","*영","*준","*현","*민","*서","*진","*우","*아","*은","*재","*윤","*호","*빈","*성","*연","*주",
 ];
 
 const AVATAR_COLORS = [
-  "bg-blue-500",
-  "bg-indigo-500",
-  "bg-blue-600",
-  "bg-slate-500",
-  "bg-sky-500",
-  "bg-indigo-400",
-  "bg-emerald-500",
-  "bg-rose-500",
-  "bg-amber-500",
-  "bg-violet-500",
+  "bg-blue-500","bg-indigo-500","bg-blue-600","bg-slate-500","bg-sky-500",
+  "bg-indigo-400","bg-emerald-500","bg-rose-500","bg-amber-500","bg-violet-500",
 ];
 
 const CONTENT_PARTS = {
@@ -95,132 +57,115 @@ const CONTENT_PARTS = {
   ],
 };
 
-// ==============================
-// ✅ 전역(모든 유저 동일) "하루 6~12개"가
-// ✅ 하루 동안 2~4시간 간격 느낌으로 "시간에 따라" 올라가게 만드는 로직
-// ==============================
-const BASE_DATE_MS = new Date("2026-01-19T00:00:00+09:00").getTime();
+/**
+ * total(누적 후기 수)을 만들려면 며칠치(6~12/일)가 필요한지 역산
+ */
+function estimateStartDaysNeeded(total: number) {
+  let sum = 0;
+  let d = 0;
 
-// dayIndex(0,1,2...)별 6~12개
-function dailyAdd(dayIndex: number) {
+  while (sum < total) {
+    const x = (d * 9301 + 49297) % 233280;
+    const daily = 6 + (x % 7); // 6~12
+    sum += daily;
+    d++;
+  }
+  return d; // 며칠치가 필요했는지
+}
+
+// dayIndex별 6~12개 (고정 패턴)
+function dailyCountByIndex(dayIndex: number) {
   const x = (dayIndex * 9301 + 49297) % 233280;
   return 6 + (x % 7); // 6~12
 }
 
-// 간단한 결정론 RNG (0~1)
-function rand01(seed: number) {
-  const x = (seed * 9301 + 49297) % 233280;
-  return x / 233280;
-}
+const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount, reviewStats }) => {
+  // (미사용 경고 방지용)
+  void reviewStats;
 
-// 하루 안에서 "전역으로 +1이 일어나는 시각들(ms)" 생성
-function buildTodayScheduleMs(dayIndex: number) {
-  const n = dailyAdd(dayIndex);
-
-  const times: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const seed = dayIndex * 1000 + i * 17 + 9;
-    const t = Math.floor(rand01(seed) * 24 * 60 * 60 * 1000); // 0~24h
-    times.push(t);
-  }
-  times.sort((a, b) => a - b);
-
-  // 너무 붙어있는 경우: 최소 2시간 느낌 유지
-  const MIN_GAP = 2 * 60 * 60 * 1000;
-  for (let i = 1; i < times.length; i++) {
-    if (times[i] - times[i - 1] < MIN_GAP) {
-      times[i] = Math.min(times[i - 1] + MIN_GAP, 24 * 60 * 60 * 1000 - 1);
-    }
-  }
-  return times;
-}
-
-// 지금 시각 기준으로 "전역으로 몇 개 올라갔는지" 계산
-function calcGlobalReviewAdd(nowMs: number) {
-  const days = Math.max(
-    0,
-    Math.floor((nowMs - BASE_DATE_MS) / (24 * 60 * 60 * 1000))
-  );
-  const dayStart = BASE_DATE_MS + days * 24 * 60 * 60 * 1000;
-  const msIntoDay = Math.max(0, nowMs - dayStart);
-
-  // 과거 전체 날짜는 "하루 6~12" 합산
-  let total = 0;
-  for (let d = 0; d < days; d++) total += dailyAdd(d);
-
-  // 오늘은 "스케줄 중 지금까지 지난 것"만 카운트
-  const todaySchedule = buildTodayScheduleMs(days);
-  const todayCount = todaySchedule.filter((t) => t <= msIntoDay).length;
-
-  return total + todayCount;
-}
-
-const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ reviewCount }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // ✅ 전역 증가가 시간에 따라 반영되도록, 일정 주기로 nowTick 업데이트
-  const [nowTick, setNowTick] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNowTick(Date.now()), 30_000); // 30초마다 체크
-    return () => clearInterval(id);
-  }, []);
-
-  // ✅ "전역(모든 유저 동일)" 증가 + "App에서 내려준 reviewCount(로컬 증가 포함)" 합산
-const dynamicCount = reviewCount;
-
-
+  const dynamicCount = Math.max(0, reviewCount);
   const totalPages = Math.max(1, Math.ceil(dynamicCount / itemsPerPage));
 
   useEffect(() => {
     setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages]);
-const REVIEWS = useMemo(() => {
-  const allReviews: Review[] = [];
-  const baseDate = new Date().setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < dynamicCount; i++) {
-    // ✅ 핵심: "최신이 위"로 오도록 뒤집은 인덱스
-    const newestIndex = (dynamicCount - 1) - i;
+  const REVIEWS = useMemo(() => {
+    const total = Math.max(0, dynamicCount);
+    if (total === 0) return [];
 
-    const firstName = FIRST_NAMES[newestIndex % FIRST_NAMES.length];
-    const lastName = LAST_NAMES[(newestIndex * 7) % LAST_NAMES.length];
-    const name = firstName + lastName;
+    // ✅ 오늘 0시(로컬)
+    const today0 = new Date();
+    today0.setHours(0, 0, 0, 0);
 
-    // ✅ 최신 5개는 오늘, 다음 5개는 어제… 이런 식으로 배치
-    const daysAgo = Math.floor(newestIndex / 5);
-    const targetTimestamp = baseDate - daysAgo * 24 * 60 * 60 * 1000;
-    const targetDate = new Date(targetTimestamp);
+    // ✅ 필요한 일수 (sum>=total)
+    const daysNeeded = estimateStartDaysNeeded(total);
 
-    const dateStr = `${targetDate.getFullYear()}.${String(
-      targetDate.getMonth() + 1
-    ).padStart(2, "0")}.${String(targetDate.getDate()).padStart(2, "0")}`;
+    // ✅ 핵심 수정: "오늘 포함"되도록 시작일을 잡음 (daysNeeded-1일 전)
+    const startDate = new Date(today0);
+    startDate.setDate(startDate.getDate() - (daysNeeded - 1));
 
-    const introIdx = newestIndex % CONTENT_PARTS.intro.length;
-    const middleIdx = (newestIndex * 3) % CONTENT_PARTS.middle.length;
-    const outroIdx = (newestIndex * 13) % CONTENT_PARTS.outro.length;
+    // ✅ 먼저 daysNeeded일의 "하루 6~12 패턴" 용량을 만든다
+    const dayCounts = Array.from({ length: daysNeeded }, (_, idx) => dailyCountByIndex(idx));
+    const capacity = dayCounts.reduce((s, n) => s + n, 0);
 
-    const content =
-      newestIndex % 3 === 0
-        ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
-        : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
+    // ✅ total보다 초과된 수량은 "가장 오래된 날짜부터" 깎는다
+    //    -> 최근(어제/오늘)은 6~12개를 유지하게 됨
+    let excess = Math.max(0, capacity - total);
+    for (let i = 0; i < dayCounts.length && excess > 0; i++) {
+      const cut = Math.min(excess, dayCounts[i]);
+      dayCounts[i] -= cut;
+      excess -= cut;
+    }
 
-    const color = AVATAR_COLORS[newestIndex % AVATAR_COLORS.length];
+    // ✅ 이제 dayCounts대로 실제 리뷰 생성 (총 개수 = total 정확히 일치)
+    const all: Review[] = [];
+    let id = 1;
 
-    allReviews.push({
-      id: i + 1,
-      name,
-      date: dateStr,
-      rating: 5,
-      content,
-      color,
-      timestamp: targetTimestamp,
-    });
-  }
+    for (let dayIndex = 0; dayIndex < daysNeeded; dayIndex++) {
+      const cnt = dayCounts[dayIndex];
+      if (cnt <= 0) continue;
 
-  return allReviews.sort((a, b) => b.timestamp - a.timestamp);
-}, [dynamicCount]);
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + dayIndex);
 
+      for (let i = 0; i < cnt; i++) {
+        const firstName = FIRST_NAMES[id % FIRST_NAMES.length];
+        const lastName = LAST_NAMES[(id * 7) % LAST_NAMES.length];
+
+        const dateStr = `${currentDate.getFullYear()}.${String(currentDate.getMonth() + 1).padStart(2, "0")}.${String(
+          currentDate.getDate()
+        ).padStart(2, "0")}`;
+
+        const introIdx = id % CONTENT_PARTS.intro.length;
+        const middleIdx = (id * 3) % CONTENT_PARTS.middle.length;
+        const outroIdx = (id * 13) % CONTENT_PARTS.outro.length;
+
+        const content =
+          id % 3 === 0
+            ? `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.outro[outroIdx]}`
+            : `${CONTENT_PARTS.intro[introIdx]} ${CONTENT_PARTS.middle[middleIdx]} ${CONTENT_PARTS.outro[outroIdx]}`;
+
+        all.push({
+          id,
+          name: firstName + lastName,
+          date: dateStr,
+          rating: 5,
+          content,
+          color: AVATAR_COLORS[id % AVATAR_COLORS.length],
+          // 하루 내 시간 분산(최대 12개라 0~11시로 충분)
+          timestamp: currentDate.getTime() + i * 60 * 60 * 1000,
+        });
+
+        id++;
+      }
+    }
+
+    return all.sort((a, b) => b.timestamp - a.timestamp);
+  }, [dynamicCount]);
 
   const currentReviews = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -228,8 +173,7 @@ const REVIEWS = useMemo(() => {
   }, [REVIEWS, currentPage]);
 
   const pageNumbers = useMemo(() => {
-    const isMobile =
-      typeof window !== "undefined" ? window.innerWidth < 640 : false;
+    const isMobile = typeof window !== "undefined" ? window.innerWidth < 640 : false;
     const delta = isMobile ? 2 : 4;
 
     const pages: (number | string)[] = [];
@@ -240,11 +184,8 @@ const REVIEWS = useMemo(() => {
         (i >= currentPage - delta && i <= currentPage + delta) ||
         (currentPage <= 5 && i <= 8);
 
-      if (inRange) {
-        pages.push(i);
-      } else {
-        if (pages[pages.length - 1] !== "...") pages.push("...");
-      }
+      if (inRange) pages.push(i);
+      else if (pages[pages.length - 1] !== "...") pages.push("...");
     }
     return pages;
   }, [currentPage, totalPages]);
@@ -258,11 +199,10 @@ const REVIEWS = useMemo(() => {
   };
 
   return (
-<div
-  className="w-full max-w-4xl mx-auto mt-2 sm:mt-3 bg-white rounded-[32px] sm:rounded-[48px] overflow-hidden border border-gray-100 shadow-xl"
-  id="reviews-top"
->
-
+    <div
+      className="w-full max-w-4xl mx-auto mt-2 sm:mt-3 bg-white rounded-[32px] sm:rounded-[48px] overflow-hidden border border-gray-100 shadow-xl"
+      id="reviews-top"
+    >
       <div className="px-6 sm:px-10 py-5 sm:py-7 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/50 gap-4">
         <div>
           <h3 className="font-black text-slate-800 text-lg sm:text-2xl tracking-tighter">
@@ -275,9 +215,7 @@ const REVIEWS = useMemo(() => {
           </span>
           <div className="flex gap-0.5 mt-1">
             {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className="text-amber-400 text-sm sm:text-base">
-                ★
-              </span>
+              <span key={s} className="text-amber-400 text-sm sm:text-base">★</span>
             ))}
           </div>
         </div>
@@ -285,10 +223,7 @@ const REVIEWS = useMemo(() => {
 
       <div className="divide-y divide-gray-50">
         {currentReviews.map((review) => (
-          <div
-            key={review.id}
-            className="p-5 sm:p-7 hover:bg-slate-50/30 transition-colors"
-          >
+          <div key={review.id} className="p-5 sm:p-7 hover:bg-slate-50/30 transition-colors">
             <div className="flex items-center gap-3 sm:gap-5 mb-3 sm:mb-4">
               <div
                 className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full ${review.color} flex items-center justify-center font-black text-white text-sm sm:text-lg shadow-sm`}
@@ -303,12 +238,7 @@ const REVIEWS = useMemo(() => {
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <span
-                        key={s}
-                        className="text-amber-400 text-[10px] sm:text-[12px]"
-                      >
-                        ★
-                      </span>
+                      <span key={s} className="text-amber-400 text-[10px] sm:text-[12px]">★</span>
                     ))}
                   </div>
                   <span className="text-slate-400 text-[11px] sm:text-[13px] font-bold">
@@ -345,12 +275,7 @@ const REVIEWS = useMemo(() => {
           <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center">
             {pageNumbers.map((p, i) =>
               p === "..." ? (
-                <span
-                  key={`dots-${i}`}
-                  className="text-slate-300 font-bold px-0.5 sm:px-1"
-                >
-                  ...
-                </span>
+                <span key={`dots-${i}`} className="text-slate-300 font-bold px-0.5 sm:px-1">...</span>
               ) : (
                 <button
                   type="button"
@@ -381,8 +306,7 @@ const REVIEWS = useMemo(() => {
         </div>
 
         <p className="text-[10px] sm:text-[12px] font-bold text-slate-300 uppercase tracking-widest text-center">
-          PAGE <span className="text-slate-400">{currentPage}</span> /{" "}
-          {totalPages} ({dynamicCount.toLocaleString()}건 REVIEWS)
+          PAGE <span className="text-slate-400">{currentPage}</span> / {totalPages} ({dynamicCount.toLocaleString()}건 REVIEWS)
         </p>
       </div>
     </div>
