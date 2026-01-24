@@ -45,7 +45,9 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
   const [isAgreed, setIsAgreed] = useState(true);
   const [step, setStep] = useState<FormStep>('form');
   const [showSms, setShowSms] = useState<{ show: boolean; msg: string }>({ show: false, msg: "" });
+  const [applicationId, setApplicationId] = useState<string>(""); // ✅ 추가: 저장된 접수 ID(APP-...) 보관
   const paymentRef = useRef<HTMLDivElement>(null);
+
 
 
 
@@ -216,7 +218,8 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
     return couplePackagesPrice + otherProductsPrice;
   };
 
-  const handleApplyClick = () => {
+  const handleApplyClick = async () => {
+
     if (!isAgreed) {
       alert('개인정보 이용 약관에 동의해주세요.');
       return;
@@ -247,8 +250,14 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
       return;
     }
 
-    databaseService.saveApplication(companions);
-    setStep('payment');
+if (!savedId) {
+  alert("접수 저장에 실패했습니다. 잠시 후 다시 시도해주세요.");
+  return;
+}
+setApplicationId(savedId);
+setStep("payment");
+
+
     
     setTimeout(() => {
       const el = document.getElementById('payment-info-section');
@@ -260,12 +269,24 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
     triggerSmsNotification(`[오마이사주] ${self.name}님 접수 완료. 안내된 계좌로 입금 주시면 확인 후 결과가 발송됩니다.`);
   };
 
-  const handlePaymentDone = () => {
+const handlePaymentDone = async () => {
+  try {
+    // ✅ 1) 버튼 누르면 바로 상태를 paid_requested 로 변경 요청
+    if (applicationId) {
+      await databaseService.updateStatus(applicationId, "paid_requested");
+    }
+
+    // ✅ 2) 화면 전환
     setStep('confirming');
     setTimeout(() => {
       onComplete();
     }, 1200);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("상태 업데이트에 실패했습니다. 잠시 후 다시 눌러주세요.");
+  }
+};
+
 
   const years = Array.from({ length: 100 }, (_, i) => (2026 - i).toString());
   const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
