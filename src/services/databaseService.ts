@@ -4,7 +4,7 @@ const DB_KEY = "saju_applications_v1";
 
 // 배포 후 받은 Apps Script URL
 const GOOGLE_SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbyzYi1I88L6z-98y981s6Z-ogjzlCI64PwZafgGTi0Rx0ioOjZhZhzWflva2mI8VaNw/exec";
+  "https://script.google.com/macros/s/AKfycbyjaYekh0qg3iLYjEf-dfhrt1Q9o2sclidtt7id0O5dYoclq7KOSW0NyGj83VzINDnl/exec";
 
 
 // 상태 우선순위 (모르는 상태가 와도 안전하게 처리)
