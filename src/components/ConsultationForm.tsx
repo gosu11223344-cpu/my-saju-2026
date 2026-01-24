@@ -587,66 +587,91 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ onComplete, isLoadi
           <div id="payment-info-section" ref={paymentRef} className="bg-transparent space-y-4 sm:space-y-6 animate-in zoom-in-95 duration-700 max-w-xl mx-auto text-center">
             
             <div className="space-y-2 sm:space-y-3">
-              <div className="inline-block bg-[#FFF9E5] text-[#D97706] px-4 py-1 rounded-full text-[10px] sm:text-[12px] font-black tracking-[0.2em] uppercase">
-                APPLICATION SUCCESS
-              </div>
-              <h3 className="text-[22px] sm:text-[34px] font-black text-[#1e293b] tracking-tighter leading-tight">
-                신청이 정상 접수되었습니다.
-              </h3>
-              <h4 className="text-[18px] sm:text-[28px] font-black text-[#C02128] tracking-tighter leading-tight">
-                입금 완료 확인 후 분석 작업이 시작됩니다.
-              </h4>
-              <p className="text-slate-400 text-[11px] sm:text-[15px] font-bold tracking-tight px-4 break-keep opacity-80">
-                안내된 계좌로 입금해 주시면 입금 확인 즉시 정밀 분석이 진행됩니다.
-              </p>
+             <div className="inline-block bg-[#FFF9E5] text-[#D97706] px-4 py-1 rounded-full text-[15px] sm:text-[12px] font-black tracking-[0.2em] uppercase">
+  APPLICATION SUCCESS
+</div>
+<h3 className="text-[33px] sm:text-[34px] font-black text-[#1e293b] tracking-tighter leading-tight">
+  신청이 정상 접수되었습니다.
+</h3>
+<h4 className="text-[27px] sm:text-[28px] font-black text-[#C02128] tracking-tighter leading-tight">
+  입금 완료 확인 후 분석 작업이 시작됩니다.
+</h4>
+<p className="text-slate-400 text-[16px] sm:text-[15px] font-bold tracking-tight px-4 break-keep opacity-80 leading-relaxed">
+  안내된 계좌로 입금해 주시면 입금 확인 즉시 정밀 분석이 진행됩니다.
+</p>
+
             </div>
 
             <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-gray-100 shadow-[0_15px_50px_rgba(0,0,0,0.05)] space-y-6 sm:space-y-8 relative">
-              <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-start text-center sm:text-right gap-2 sm:gap-4">
-                <span className="text-slate-400 text-[13px] sm:text-[18px] font-black tracking-tight">입금 계좌</span>
-                <div className="flex flex-col items-center sm:items-end">
-                  <div className="text-[#0f172a] text-[18px] sm:text-[28px] font-black tracking-tighter leading-none mb-1 sm:mb-2">
-                    국민은행 774201-01-509358
-                  </div>
-                  <div className="text-[#B84A1A] text-[12px] sm:text-[20px] font-black italic opacity-90">
-                    예금주: 김형감(에이치감유통)
-                  </div>
-                </div>
-              </div>
 
-              <div className="h-px bg-slate-100 w-full"></div>
+  {/* 입금 계좌 */}
+  <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-start text-center sm:text-right gap-2 sm:gap-4">
+    <span className="text-slate-400 text-[19px] sm:text-[18px] font-black tracking-tight">
+      입금 계좌
+    </span>
 
-              <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-center text-center sm:text-right gap-1 sm:gap-4">
-                <span className="text-slate-400 text-[13px] sm:text-[18px] font-black tracking-tight">최종 결제 금액</span>
-                <div className="text-[#C02128] text-[30px] sm:text-[54px] font-black tracking-tighter leading-none">
-                  {getTotalPrice().toLocaleString()}원
-                </div>
-              </div>
-            </div>
+    {/* ✅ 계좌/예금주를 감싸는 wrapper 추가 */}
+    <div className="flex flex-col items-center sm:items-end">
+      <div className="text-[#0f172a] text-[27px] sm:text-[28px] font-black tracking-tighter leading-none mb-1 sm:mb-2">
+        국민은행 774201-01-509358
+      </div>
+      <div className="text-[#B84A1A] text-[18px] sm:text-[20px] font-black italic opacity-90">
+        예금주: 김형감(에이치감유통)
+      </div>
+    </div>
+  </div>
 
-            <div className="bg-[#FFFCF0] border border-[#FDE68A]/40 rounded-[24px] p-5 sm:p-8 flex gap-3 sm:gap-4 items-start text-left shadow-sm">
-               <div className="w-7 h-7 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center text-base sm:text-xl shadow-sm flex-shrink-0 border border-slate-50">💡</div>
-               <div className="text-[#78350F] text-[12px] sm:text-[17px] font-bold leading-relaxed tracking-tight break-keep">
-                 반드시 <span className="text-[#C02128] font-black underline underline-offset-4 decoration-[#C02128]/30">실제 입금자 성함({finalDepositorName})</span>으로 입금 부탁드립니다. 입금 확인 후 <span className="text-[#C02128] font-black">최대 6~12시간 이내</span>에 결과지가 발송됩니다.
-               </div>
-            </div>
+  <div className="h-px bg-slate-100 w-full"></div>
 
-            <div className="pt-1">
-              <button 
-                onClick={handlePaymentDone}
-                disabled={step === 'confirming'}
-                className={`w-full py-5 sm:py-8 text-white rounded-[20px] sm:rounded-[28px] font-black text-[18px] sm:text-[28px] shadow-[0_12px_35px_rgba(30,41,59,0.15)] transition-all transform tracking-tighter flex items-center justify-center gap-3 ${step === 'confirming' ? 'bg-slate-400' : 'bg-[#1e293b] hover:bg-[#0f172a] active:scale-[0.97]'}`}
-              >
-                {step === 'confirming' ? (
-                  <>
-                    <div className="w-5 h-5 sm:w-7 sm:h-7 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    입금 확인 중...
-                  </>
-                ) : (
-                  '입금을 완료했습니다'
-                )}
-              </button>
-            </div>
+  {/* 최종 결제 금액 */}
+  <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-center text-center sm:text-right gap-1 sm:gap-4">
+    <span className="text-slate-400 text-[19px] sm:text-[18px] font-black tracking-tight">
+      최종 결제 금액
+    </span>
+    <div className="text-[#C02128] text-[45px] sm:text-[54px] font-black tracking-tighter leading-none">
+      {getTotalPrice().toLocaleString()}원
+    </div>
+  </div>
+
+</div>
+
+{/* 안내 박스 */}
+<div className="bg-[#FFFCF0] border border-[#FDE68A]/40 rounded-[24px] p-5 sm:p-8 flex gap-3 sm:gap-4 items-start text-left shadow-sm">
+  <div className="w-10 h-10 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center text-xl sm:text-xl shadow-sm flex-shrink-0 border border-slate-50">
+    💡
+  </div>
+  <div className="text-[#78350F] text-[18px] sm:text-[17px] font-bold leading-relaxed tracking-tight break-keep">
+    반드시{" "}
+    <span className="text-[#C02128] font-black underline underline-offset-4 decoration-[#C02128]/30">
+      실제 입금자 성함({finalDepositorName})
+    </span>
+    으로 입금 부탁드립니다. 입금 확인 후{" "}
+    <span className="text-[#C02128] font-black">최대 6~12시간 이내</span>에 결과지가 발송됩니다.
+  </div>
+</div>
+
+{/* 버튼 */}
+<div className="pt-1">
+  <button
+    onClick={handlePaymentDone}
+    disabled={step === 'confirming'}
+    className={`w-full py-5 sm:py-8 text-white rounded-[20px] sm:rounded-[28px] font-black text-[27px] sm:text-[28px] shadow-[0_12px_35px_rgba(30,41,59,0.15)] transition-all transform tracking-tighter flex items-center justify-center gap-3 ${
+      step === 'confirming'
+        ? 'bg-slate-400'
+        : 'bg-[#1e293b] hover:bg-[#0f172a] active:scale-[0.97]'
+    }`}
+  >
+    {step === 'confirming' ? (
+      <>
+        <div className="w-5 h-5 sm:w-7 sm:h-7 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+        입금 확인 중...
+      </>
+    ) : (
+      '입금을 완료했습니다'
+    )}
+  </button>
+</div>
+
           </div>
         )}
         
